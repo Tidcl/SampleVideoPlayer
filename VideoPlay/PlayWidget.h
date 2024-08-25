@@ -16,6 +16,7 @@
 #include <FL/Fl_PNG_Image.H>
 #include <FL/Fl_Image.H>
 #include <FL/Fl_Pixmap.H>
+#include <FL/Fl_Input.H>
 //#include <FL/Fl_Progress.H>
 #include <FL/Fl_Choice.H>
 extern "C"
@@ -50,6 +51,7 @@ public:
     void choice_playSpeed();
     void progress_play();
 private:
+    Fl_Input* m_input = nullptr;  //播放资源路径
     Fl_Button* m_btn = nullptr; //播放按钮
     Fl_Button* m_pauseBtn = nullptr;    //暂停按钮
     Fl_Box* m_label = nullptr;  //显示label

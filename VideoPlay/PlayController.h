@@ -55,7 +55,6 @@ public:
     int startPlay();
     void stopPlay();
 
-    void stop();
     void setPause(bool pause) { m_pause = pause; };
     bool pause() { return m_pause; };
     void seek(long timeMS); //跳到指定ms

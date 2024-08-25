@@ -85,8 +85,9 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 	:Fl_Group(x, y, w, h, str)
 {
 	//界面位置
-	m_btn = new Fl_Button(x, this->y() + 10, w*0.4, 20, "播放");
-	m_pauseBtn = new Fl_Button(x + w*0.5, this->y() + 10, w*0.4, 20, "暂停");
+	m_input = new Fl_Input(x, 5, w, 20, "");
+	m_btn = new Fl_Button(x + 30, this->y() + 30, w*0.4, 20, "播放");
+	m_pauseBtn = new Fl_Button(x + 30 + w*0.5, this->y() + 30, w*0.4, 20, "暂停");
 	m_label = new Fl_Box(x, m_btn->y() + m_btn->h() + 10, w, w/16*9, "");
 	m_progress = new ClickProgress(x, m_label->y() + m_label->h(), w - 70, 20);
 	m_choice = new Fl_Choice(x + m_progress->w() + 10, m_label->y() + m_label->h(), 60, 20);
@@ -169,10 +170,14 @@ void PlayWidget::btn_play_do()
 
 	if (pc->status() == PlayStatus::stop)
 	{
-		pc->setVideoUrl("C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4");
+		pc->setVideoUrl(m_input->value());
 		pc->startPlay();
-		//C:/Users/xctan/Videos/SP68.mp4  SampleVideo_176x144_10mb.3gp SampleVideo_1280x720_10mb.mkv SampleVideo_1280x720_20mb.flv
-		//rtmp://liteavapp.qcloud.com/live/liteavdemoplayerstreamid
+	}
+	else
+	{
+		pc->stopPlay();
+		pc->setVideoUrl(m_input->value());
+		pc->startPlay();
 	}
 }
 

@@ -2,21 +2,21 @@ cmake_minimum_required(VERSION 3.5.0)
 project(VideoEditor VERSION 0.1.0 LANGUAGES C CXX)
 
 #fltk
-find_package(FLTK REQUIRED PATHS C:/Users/xctan/Downloads/fltk-1.3.9-source/fltk-1.3.9/build)
+find_package(FLTK REQUIRED PATHS ./develep/fltk-1.3.9/build)
 include_directories(${FLTK_INCLUDE_DIR})
-link_directories(C:/Users/xctan/Downloads/fltk-1.3.9-source/fltk-1.3.9/build/lib/Debug)
+link_directories(./develep/fltk-1.3.9/build/lib/Debug)
 
 #ffmpeg
-include_directories(C:/Users/xctan/Code/ffmpeg-7.0.1/build-release/include)
-link_directories(C:/Users/xctan/Code/ffmpeg-7.0.1/build-release/bin)
+include_directories(./develep/ffmpeg-7.0.1/build-release/include)
+link_directories(./develep/ffmpeg-7.0.1/build-release/bin)
 
 #zlib
-include_directories(C:/Users/xctan/Code/zlib)
-link_directories(C:/Users/xctan/Code/zlib/build/Debug)
+include_directories(./develep/zlib)
+link_directories(./develep/zlib/build/Debug)
 
 #opencv
-include_directories(C:/Users/xctan/Code/opencv-4.10.0/build/install/include)
-link_directories(C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/lib)
+include_directories(./develep/opencv-4.10.0/build/install/include)
+link_directories(./develep/opencv-4.10.0/build/install/x64/vc17/lib)
 file(GLOB opencv_libs "C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/lib/*.lib")
 #find_package(OPENCV REQUIRED PATHS C:/Users/xctan/Code/opencv-4.10.0/build/install)
 

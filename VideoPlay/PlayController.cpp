@@ -207,7 +207,7 @@ int PlayController::startPlay()
 {
 	m_playDecoder->setPlayController(this);
 	m_playDecoder->initDecode(m_url);
-	m_totalDuration = m_playDecoder->m_formatContext->duration / (double)AV_TIME_BASE;
+	if(m_playDecoder->m_formatContext) m_totalDuration = m_playDecoder->m_formatContext->duration / (double)AV_TIME_BASE;
 	m_playDecoder->startDecode();
 
 	m_playThread = new std::thread([this]() {
@@ -288,6 +288,11 @@ void PlayController::stopPlay()
 {
 	if (m_playThread && m_playThread->joinable())
 	{
+		if (m_playDecoder)
+		{
+			m_playDecoder->stopDecode();
+		}
+
 		m_stop = true;
 		printf("等待线程退出...\n");
 		m_playThread->join();
