@@ -109,9 +109,10 @@ void PlayDecoder::freeDecode()
 	video_codec = nullptr;
 	video_stream_index = -1;
 
-	//avcodec_free_context(&audio_context);
-	//avcodec_free_context(&video_context);
+
 	avformat_close_input(&m_formatContext);
+	avcodec_free_context(&audio_context);
+	avcodec_free_context(&video_context);
 
 	m_formatContext = nullptr;
 	video_context = nullptr;
@@ -191,6 +192,7 @@ void PlayDecoder::startDecode()
 									std::unique_lock<std::mutex> guard(m_mutex);
 									//printf("push frame time step = %lf\n", backTime);
 									if (m_videoFrameVec.size() > 0) m_videoFrameVec.push_back(tempFrame);
+									else av_frame_free(&tempFrame);
 								}
 							}
 						}
@@ -232,8 +234,7 @@ void PlayDecoder::stopDecode()
 		printf("解码线程退出成功\n");
 		delete m_decodeThread;
 		m_decodeThread = nullptr;
-		m_videoFrameVec.clear();
-		m_audioFrameVec.clear();
+		freeBuffer();
 	}
 }
 
@@ -249,8 +250,7 @@ void PlayDecoder::videoSeek(long timeMs)
 	}
 	else 
 	{
-		m_videoFrameVec.clear();
-		m_audioFrameVec.clear();
+		freeBuffer();
 		//avcodec_parameters_to_context(video_context, m_formatContext->streams[video_stream_index]->codecpar);
 		//avcodec_flush_buffers(video_context);
 	}
@@ -259,5 +259,22 @@ void PlayDecoder::videoSeek(long timeMs)
 bool PlayDecoder::isFree()
 {
 	return m_formatContext == nullptr?true : false;
+}
+
+void PlayDecoder::freeBuffer()
+{
+	AVFrame* frame = nullptr;
+	while (m_videoFrameVec.empty() == false)
+	{
+		frame = m_videoFrameVec.front();
+		av_frame_free(&frame);
+		m_videoFrameVec.pop_front();
+	}
+	while (m_audioFrameVec.empty() == false)
+	{
+		frame = m_audioFrameVec.front();
+		av_frame_free(&frame);
+		m_audioFrameVec.pop_front();
+	}
 }
 

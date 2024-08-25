@@ -265,9 +265,13 @@ int PlayController::startPlay()
 					int frameMs = vFrame->pts * m_playDecoder->videoTimeBase();
 					if (m_func && !m_stop) 
 						m_func(vFrame, m_v, frameMs);
-					av_frame_free(&vFrame);
-					if(m_playDecoder->videoFrameVector().size() > 0)
-						m_playDecoder->videoFrameVector().pop_front();
+
+					if (vFrame)
+					{
+						av_frame_free(&vFrame);
+						if (m_playDecoder->videoFrameVector().size() > 0)
+							m_playDecoder->videoFrameVector().pop_front();
+					}
 				}
 			}
 

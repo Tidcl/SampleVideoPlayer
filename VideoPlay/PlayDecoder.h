@@ -32,6 +32,7 @@ public:
 
 	std::deque<AVFrame*>& videoFrameVector() { return m_videoFrameVec; };
 	std::deque<AVFrame*>& audioFrameVector() { return m_audioFrameVec; };
+	void freeBuffer();
 
 	double videoTimeBase() { return (video_time_base.num * 1.0 / video_time_base.den) * 1000; };
 	double audioTimeBase() { return (audio_time_base.num * 1.0 / audio_time_base.den) * 1000; };
