@@ -29,6 +29,8 @@ extern "C"
 }
 #include <zlib.h>
 #include <vector>
+#include <condition_variable>
+#include <mutex>
 
 #define Frame AVFrame
 
@@ -57,7 +59,7 @@ public:
 
     void setPause(bool pause) { m_pause = pause; };
     bool pause() { return m_pause; };
-    void seek(long timeMS); //跳到指定ms
+    void setSeekTime(long timeMS); //设置跳转到指定ms
 
     double totalDuration();
 
@@ -88,6 +90,14 @@ public:
     /// @return 压缩后的视频帧
     AVFrame compressImage(AVFrame *frame);
 
+    //使用条件变量给线程加锁等待
+    void threadWait();
+
+    ////解锁条件变量
+    //void 
+
+protected:
+    void seek(long timeMS); //跳到指定ms
 
 private:
     std::string m_url; // file url 资源路径支持本地文件、网络文件
@@ -110,6 +120,12 @@ private:
     long m_seekTimeMs = 0;  //播放偏移时间戳
 
     friend class PlayDecoder;
+
+    //做同步控制
+    std::mutex m_syncMutex;
+    std::condition_variable m_syncCond;
+    bool m_seekFlag = false;
+    //long m_seekTime;
 };
 
 

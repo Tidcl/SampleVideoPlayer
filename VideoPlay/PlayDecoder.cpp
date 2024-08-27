@@ -149,6 +149,17 @@ void PlayDecoder::startDecode()
 		m_stopDecode = false;
 
 		while (av_read_frame(m_formatContext, packet) >= 0) {
+			//新增同步控制代码
+			if (m_seekFlag)
+			{
+				//printf("解码线程进入seek等待状态\n");
+				m_playController->threadWait();	//等待直到播放线程也进入ready状态，当播放线程进入ready状态进行notify
+				//当播放线程进入ready会清除缓存队列
+				//printf("解码线程seek等待结束\n");
+				m_seekFlag = false;
+			}
+
+
 			if (m_stopDecode) break;
 
 			if (packet->stream_index == video_stream_index) {
@@ -172,7 +183,7 @@ void PlayDecoder::startDecode()
 								//判断缓存中的帧数据，是否满足播放时间戳+缓冲时间
 								if (m_videoFrameVec.empty())
 								{
-									std::unique_lock<std::mutex> guard(m_mutex);
+									//std::unique_lock<std::mutex> guard(m_mutex);
 									m_videoFrameVec.push_back(tempFrame);
 									//printf("empty push frame time step = %lf\n", backTime);
 								}
@@ -183,13 +194,13 @@ void PlayDecoder::startDecode()
 									while (lastFrameTimeStep > (m_playController->playTimeSeconds() + m_bufferTime))
 									{
 										if (m_stopDecode) break;
-										if (m_videoFrameVec.size() == 0)
+										if (m_videoFrameVec.size() == 0 || m_seekFlag)
 										{
 											lastFrameTimeStep = -1;	//退出等待播放时间戳前进的循环。如果在解码前发现缓存中存在数据，且最后一帧时间戳远大于播放时间+缓存时间，便会进入循环等待播放时间戳前进。如果播放时间偏移是向前偏移，则会出现永远也不会出现当前帧在缓存时间中。
 										}
 										std::this_thread::sleep_for(std::chrono::microseconds(1));
 									}
-									std::unique_lock<std::mutex> guard(m_mutex);
+									//std::unique_lock<std::mutex> guard(m_mutex);
 									//printf("push frame time step = %lf\n", backTime);
 									if (m_videoFrameVec.size() > 0) m_videoFrameVec.push_back(tempFrame);
 									else av_frame_free(&tempFrame);
@@ -242,7 +253,8 @@ void PlayDecoder::videoSeek(long timeMs)
 {
 	if (m_formatContext == nullptr) return;
 
-	std::unique_lock<std::mutex> guard(m_mutex);
+	m_seekFlag = true;
+	//std::unique_lock<std::mutex> guard(m_mutex);
 	long timeStep = timeMs / videoTimeBase();
 
 	if (av_seek_frame(m_formatContext, video_stream_index, timeStep, AVSEEK_FLAG_BACKWARD) < 0) {
@@ -250,7 +262,7 @@ void PlayDecoder::videoSeek(long timeMs)
 	}
 	else 
 	{
-		freeBuffer();
+		//freeBuffer();
 		//avcodec_parameters_to_context(video_context, m_formatContext->streams[video_stream_index]->codecpar);
 		//avcodec_flush_buffers(video_context);
 	}

@@ -35,7 +35,7 @@ struct UpdateLabelInfo {
 	~UpdateLabelInfo() = default;
 	Fl_Box* _label;
 	Fl_RGB_Image* _img;
-	void* _imgData;
+	void* _imgData;	//指向图像数据的指针，用来释放图像内存
 
 	Fl_Progress* _progress;
 	double _progressValue;
@@ -111,7 +111,7 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 		UpdateLabelInfo* info = new UpdateLabelInfo();
 		info->_label =  thii->m_label;
 		info->_img = img1;
-		info->_imgData = imgDataPtr;
+		info->_imgData = imgDataPtr;	
 
 		info->_progress = thii->m_progress;
 		info->_progressValue = playTimeMS * 0.001;
@@ -200,5 +200,5 @@ void PlayWidget::progress_play()
 {
 	double progressValue = m_progress->value();
 	//double timeStep = progressValue * (double)AV_TIME_BASE;
-	m_pc.seek(progressValue * 1000);
+	m_pc.setSeekTime(progressValue * 1000);
 }

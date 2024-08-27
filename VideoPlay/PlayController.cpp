@@ -7,7 +7,13 @@ void PlayController::seek(long timeMS)
 	m_seekTimeMs = timeMS;
 	m_pauseMS = 0;
 	m_playStartTime = 0;
-	if(m_playDecoder) m_playDecoder->videoSeek(m_seekTimeMs);
+	//if(m_playDecoder) m_playDecoder->videoSeek(m_seekTimeMs);
+}
+
+void PlayController::setSeekTime(long timeMS)
+{
+	m_seekFlag = true;
+	m_seekTimeMs = timeMS;
 }
 
 double PlayController::totalDuration()
@@ -18,7 +24,7 @@ double PlayController::totalDuration()
 void PlayController::setPlaySpeed(double playSpeed)
 {
 	m_playSpeed = playSpeed;
-	seek(playTimeSeconds());
+	setSeekTime(playTimeSeconds());
 }
 
 void PlayController::setFrameRecall(frameRecall* func, void* v)
@@ -170,6 +176,11 @@ end:
 	return ret;
 }
 
+void PlayController::threadWait()
+{
+	m_syncCond.wait(std::unique_lock<std::mutex>(m_syncMutex));
+}
+
 PlayController::PlayController()
 {
 	m_playDecoder = new PlayDecoder();
@@ -217,16 +228,35 @@ int PlayController::startPlay()
 		m_playTime = 0;
 		m_playStartTime = 0;
 		m_seekTimeMs = 0;
-		m_playDecoder->videoSeek(m_seekTimeMs);
+		//m_playDecoder->videoSeek(m_seekTimeMs);
+		setSeekTime(0);
 		m_pauseMS = 0;
 
 		m_playStart = std::chrono::high_resolution_clock::now();
 		int initCount = 0;
 		while (!m_stop)
 		{
-			if (m_playDecoder->isFree()) break;
-
+			//if (m_playDecoder->isFree()) break;	//如果解码器线程已经退出
 			std::this_thread::sleep_for(std::chrono::microseconds(1)); //1us处理1次
+
+			//判断是否进入seek
+			if (m_seekFlag)
+			{
+				//printf("播放线程进入seek逻辑\n");
+				m_playDecoder->videoSeek(m_seekTimeMs);
+				//printf("播放线程设置解码线程seek\n");
+				//printf("播放线程尝试等待解码线程上锁\n");
+				while (m_syncMutex.try_lock())
+					m_syncMutex.unlock();
+				//printf("播放线程检测到解码线程上锁\n");
+				seek(m_seekTimeMs);
+				//printf("播放线程seek初始化\n");
+				m_playDecoder->freeBuffer();
+				//printf("播放线程释放缓存\n");
+				m_syncCond.notify_all();
+				//printf("播放线程唤醒解码线程\n");
+				m_seekFlag = false;
+			}
 
 			//如果用户停止播放，记录暂停的时间
 			if (m_pause)
@@ -242,18 +272,20 @@ int PlayController::startPlay()
 				}
 				m_pauseMS += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - pause).count();
 			}
+			//*********************************************************
 
 			initCount = 0;
 			//等待解码器
-			while (m_playDecoder->videoFrameVector().empty())
+			while (m_playDecoder->videoFrameVector().empty() && m_seekFlag == false)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
-				printf("等待解码初始化中...%dms\n", (++initCount) * 10);
+				//printf("等待解码初始化中...%dms\n", (++initCount) * 10);
 				if (m_stop) //如果设置停止，则退出从解码器获取帧
 				{
 					return;
 				}
 			}
+			//************************************************************
 
 			//视频帧缓存队列
 			if (m_playDecoder->videoFrameVector().empty() == false)

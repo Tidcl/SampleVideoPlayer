@@ -64,5 +64,6 @@ private:
 
 	long m_bufferTime = 0;//缓存多少ms
 
-	std::mutex m_mutex;
+	std::mutex m_mutex;	//队列同步锁
+	bool m_seekFlag = false;	//seek标志，如果为true表示进入seek状态
 };
