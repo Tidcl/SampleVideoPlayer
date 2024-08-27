@@ -11,18 +11,19 @@ extern "C"
 #include <vector>
 #include <deque>
 #include <mutex>
+#include <memory>
 
 class PlayController;
 //用于将解复用器中解码的视频帧和音频帧放入处理队列
 //播放解码器
-class PlayDecoder {
+class PlayDecoder : public std::enable_shared_from_this<PlayDecoder> {
 public:
 	friend class PlayController;
 
-	PlayDecoder() = default;
-	~PlayDecoder() = default;
+	PlayDecoder();
+	~PlayDecoder();
 
-	void setPlayController(PlayController* controller) { m_playController = controller; };
+	void setPlayController(std::shared_ptr<PlayController> controller);
 	void initDecode(std::string url);
 	void freeDecode();
 	void startDecode();
@@ -40,7 +41,7 @@ private:
 	std::thread* m_decodeThread;
 	bool m_stopDecode;
 
-	PlayController* m_playController;//
+	std::shared_ptr<PlayController> m_playController = nullptr;//
 
 	AVFormatContext* m_formatContext;
 	//视频解码相关对象

@@ -4,6 +4,21 @@
 #include "PlayDecoder.h"
 #include "PlayController.h"
 
+PlayDecoder::PlayDecoder()
+{
+
+}
+
+PlayDecoder::~PlayDecoder()
+{
+
+}
+
+void PlayDecoder::setPlayController(std::shared_ptr<PlayController> controller)
+{
+	m_playController = controller;
+}
+
 void PlayDecoder::initDecode(std::string url)
 {
 	freeDecode();

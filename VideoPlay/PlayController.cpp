@@ -183,7 +183,7 @@ void PlayController::threadWait()
 
 PlayController::PlayController()
 {
-	m_playDecoder = new PlayDecoder();
+	m_playDecoder.reset(new PlayDecoder());
 }
 
 PlayController::~PlayController()
@@ -192,7 +192,7 @@ PlayController::~PlayController()
 	if (m_playDecoder)
 	{
 		m_playDecoder->stopDecode();
-		delete m_playDecoder;
+		//delete m_playDecoder;
 	}
 }
 
@@ -216,7 +216,7 @@ double PlayController::playTimeSeconds()
 
 int PlayController::startPlay()
 {
-	m_playDecoder->setPlayController(this);
+	m_playDecoder->setPlayController(this->shared_from_this());
 	m_playDecoder->initDecode(m_url);
 	if(m_playDecoder->m_formatContext) m_totalDuration = m_playDecoder->m_formatContext->duration / (double)AV_TIME_BASE;
 	m_playDecoder->startDecode();
