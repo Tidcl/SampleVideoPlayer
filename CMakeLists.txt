@@ -15,9 +15,9 @@ include_directories(./develep/zlib)
 link_directories(./develep/zlib/build/Debug)
 
 #opencv
-include_directories(./develep/opencv-4.10.0/build/install/include)
-link_directories(./develep/opencv-4.10.0/build/install/x64/vc17/lib)
-file(GLOB opencv_libs "C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/lib/*.lib")
+#include_directories(./develep/opencv-4.10.0/build/install/include)
+#link_directories(./develep/opencv-4.10.0/build/install/x64/vc17/lib)
+#file(GLOB opencv_libs "C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/lib/*.lib")
 #find_package(OPENCV REQUIRED PATHS C:/Users/xctan/Code/opencv-4.10.0/build/install)
 
 #设置运行目录 可以通过set_target_properties
@@ -26,17 +26,23 @@ file(GLOB opencv_libs "C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/
 #    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/custom_bin
 #)
 
+
+
+include_directories("./net/")
+
 file(GLOB PlaySrc "./VideoPlay/*.cpp")
-# file(GLOB HDR_FILES "./VideoPlay/*.h")
+file(GLOB NetSrc "./net/*.cpp")
+
 
 message("..........................................................................................................................................")
-message(${opencv_libs})
+#message(${opencv_libs})
 message(${PlaySrc})
+message(${NetSrc})
 message("..........................................................................................................................................")
 
 
 
-add_executable(VideoEditor main.cpp ${PlaySrc})
+add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc})
 
 #set_target_properties(VideoEditor PROPERTIES
 #    RUNTIME_OUTPUT_DIRECTORY C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/bin
@@ -46,3 +52,5 @@ target_link_libraries(VideoEditor fltkd fltk_zd fltk_jpegd fltk_pngd fltk_images
 target_link_libraries(VideoEditor avcodec avdevice avfilter avformat avutil swresample swscale)
 target_link_libraries(VideoEditor zlibd zlibstaticd)
 target_link_libraries(VideoEditor ${opencv_libs})
+# 查找 WinSock 库
+target_link_libraries(VideoEditor ws2_32)

@@ -15,7 +15,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <windows.h>
+//#include <windows.h>
 #include <chrono>
 #include <thread>
 #include <FL/Fl.H>
