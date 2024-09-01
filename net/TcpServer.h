@@ -4,7 +4,7 @@
 #include "Handle.h"
 #include "Channel.h"
 #include "Poller.h"
-#include "TcpClient.h"
+#include "HttpClient.h"
 
 class TcpServer : public Handle, public std::enable_shared_from_this<TcpServer> {
 public:
@@ -75,7 +75,7 @@ void TcpServer::acceptHandle()
 	int clientFd = accept(fd, &addr, &slen);
 	if (clientFd > 0)
 	{
-		std::shared_ptr<TcpClient> tcpClient = std::make_shared<TcpClient>();
+		std::shared_ptr<HttpClient> tcpClient = std::make_shared<HttpClient>();
 		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
 		clientChannel->setFD(clientFd);
 		tcpClient->setChannel(clientChannel); 

@@ -17,29 +17,6 @@ public:
 
 	virtual void readHandle() override
 	{
-		printf("%s\n", m_channel->readData().c_str());
-		m_channel->writeToBuffer(m_channel->readData());
-		std::string str = R"(HTTP/1.1 200 OK
-Date: Sat, 31 Aug 2024 12:00:00 GMT
-Content-Type: text/html; charset=UTF-8
-Content-Length: 143
-Connection: close
-
-<!DOCTYPE html>
-<html>
-<head>
-<title>Page Title</title>
-</head>
-<body>
-
-<h1>This is a Heading</h1>
-<p>This is a paragraph.</p>
-
-</body>
-</html>)";
-		m_channel->writeToBuffer(str);
-
-
 	};
 
 	virtual void writeHandle() override
@@ -50,7 +27,7 @@ Connection: close
 	virtual void errorHandle() override
 	{
 	};
-private:
+protected:
 	std::shared_ptr<Channel> m_channel;
 
 	friend class Acceptor;

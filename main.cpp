@@ -56,8 +56,9 @@ int main(int argc, char *argv[]) {
 	std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();
 	std::shared_ptr<TcpServer> ts = std::make_shared<TcpServer>(spoller);
 	ts->listen(spoller, 8890);
-	std::thread t([spoller]() {
-		while (1)
+	bool stopThread = false;
+	std::thread t([&stopThread, spoller]() {
+		while (!stopThread)
 		{
 			//Sleep(1);
 			spoller->poll();
@@ -87,7 +88,10 @@ int main(int argc, char *argv[]) {
 	PlayWidget form(0, 0, 800, 600, "");
 	fw.show(argc, argv);
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-	return Fl::run();
+	int lrtn = Fl::run();
+	stopThread = true;
+	t.join();
+	return lrtn;
 
   // PlayController playC;
   // playC.setVideoUrl("C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4");
