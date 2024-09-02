@@ -1,6 +1,5 @@
 #include "Channel.h"
 
-
 void Channel::updateEventType()
 {
 	if (m_focusEventType == TEventType::acceptEvent)	//accept事件的channel不会切换事件，因此不需要改变
@@ -8,7 +7,7 @@ void Channel::updateEventType()
 		return;
 	}
 
-	if (m_writeBuffer.empty() == false)
+	if (m_writeByteBuffer.empty() == false)
 	{
 		m_focusEventType = TEventType::writeEvent;
 	}
@@ -51,18 +50,6 @@ int Channel::fd()
 	return m_fd;
 }
 
-int Channel::writeToBuffer(std::string str)
-{
-	m_writeBuffer = str;
-	return 0;
-}
-
-int Channel::readToBuffer(std::string& str)
-{
-	str = m_readBuffer;
-	return 0;
-}
-
 void Channel::handle()
 {
 	if (eventType() == TEventType::acceptEvent)
@@ -71,16 +58,17 @@ void Channel::handle()
 	}
 	else if (eventType() == TEventType::readEvent)
 	{
-		char* bufferAddr = const_cast<char*>(m_readBuffer.c_str());
-		int rtn = recv(m_fd, bufferAddr, m_readBuffer.length(), 0);
+		m_readByteBuffer.clear();
+		char* bufferAddr = const_cast<char*>(m_readByteBuffer.data());
+		int rtn = recv(m_fd, bufferAddr, m_readByteBuffer.capacity(), 0);
 		if (rtn > 0)
 		{
-			m_readData = m_readBuffer.substr(0, rtn);
 			m_handle->readHandle();
 		}
 		else
 		{
 			m_poller->rmFD(m_fd);
+			closesocket(m_fd);
 			m_handle.reset();	//释放掉handler
 		}
 
@@ -89,15 +77,16 @@ void Channel::handle()
 	{
 		m_handle->writeHandle();
 
-		std::string& wBuffer = m_writeBuffer;
-		int rtn = send(m_fd, wBuffer.c_str(), wBuffer.length(), 0);
-		if (rtn == wBuffer.length())
+		m_writeByteBuffer;
+		int rtn = send(m_fd, m_writeByteBuffer.data(), m_writeByteBuffer.length(), 0);
+		if (rtn == m_writeByteBuffer.length())
 		{
-			wBuffer.clear();
+			m_writeByteBuffer.clear();
+			m_focusEventType = TEventType::readEvent;
 		}
 		else
 		{
-			wBuffer = wBuffer.substr(rtn);
+			m_writeByteBuffer.take(rtn);
 		}
 	}
 }
