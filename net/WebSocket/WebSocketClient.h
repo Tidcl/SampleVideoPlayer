@@ -12,7 +12,27 @@ public:
 	WebSocketClient() {};
 	~WebSocketClient() {};
 
+	enum FrameType {
+
+
+	};
+
 	virtual void readHandle() override;
+
+	void dealData(const char* buffer);
+
+	bool isShakeHands(const char* buffer);
+
+	bool deal1Frame();	//是否最后一帧
+
+	bool deal2Frame(const char* buffer);	//是否被掩码处理过
+
+	char* newDataFromBuffer(const char* buffer);
+
+	void dealShakeHands(const char* buffer);
+
+	void getLengthBytes(size_t contentLength, char*& byte, int& length);
+	
 
 	// Function to perform a SHA-1 hash
 	static std::vector<uint8_t> sha1(const std::string& input);

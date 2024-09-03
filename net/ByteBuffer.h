@@ -67,6 +67,10 @@ public:
 		m_writePos = 0;
 	};
 
+	bool append(char data) {
+		return append(&data, 1);
+	};
+
 	bool append(const char* data, size_t size) {
 		return this->append(data, (int)size);
 	}
@@ -156,7 +160,8 @@ public:
 		m_ifs->read(m_buffer, m_capacity);
 		m_writePos = m_ifs->gcount();
 	};
-private:
+
+
 	std::ifstream* m_ifs = nullptr;
 
 	char* m_buffer = nullptr;

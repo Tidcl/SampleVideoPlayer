@@ -1,18 +1,77 @@
 #include "WebSocketClient.h"
 
-void WebSocketClient::readHandle()
+bool WebSocketClient::isShakeHands(const char* buffer)
 {
-	std::string readStr(m_channel->readBuffer().data());
+	if (buffer[6] == 'H' || buffer[7] == 'T' || buffer[8] == 'T' || buffer[9] == 'P') {
+		return true;
+	}
+	else {
+		return false;
+	}
+
+	//std::string readStr(buffer);
+	//if (readStr.find("HTTP") != 0)
+	//{
+	//	return true;
+	//}
+	//else
+	//{
+	//	return false;
+	//}
+}
+
+char* WebSocketClient::newDataFromBuffer(const char* buffer)
+{
+	const char* dataBuffer = nullptr;
+	bool isMask = deal2Frame(buffer);
+	long length = buffer[1] & 0x7f;
+	if (length >= 126) {
+		uint16_t lengthByteBuffer;
+		memcpy_s(&lengthByteBuffer, 2, buffer + 2, 2);
+		lengthByteBuffer = lengthByteBuffer << 8 | lengthByteBuffer >> 8;
+		//length = *((unsigned short*)(lengthByteBuffer));
+		length = lengthByteBuffer;
+		dataBuffer = buffer + 8; 
+	}
+	else
+	{
+		dataBuffer = buffer + 6;
+	}
+	
+
+	char* newData = new char[length+1];
+	newData[length] = 0;
+	if (isMask) {
+		char mask[4];
+		memcpy_s(mask, 4, dataBuffer - 4, 4);
+
+		for (int i = 0; i < length; i++)
+		{
+			newData[i] = (*(dataBuffer + i))^(mask[i%4]);
+		}
+	}
+	else
+	{
+		memcpy_s(newData, length, dataBuffer, length);
+	}
+
+	return newData;
+}
+
+void WebSocketClient::dealShakeHands(const char* buffer)
+{
+	std::string readStr(buffer);
 	printf("recv:\n%s\n", readStr.c_str());
 	std::string webSocketKey;
-	while (readStr.empty() == false) {
-		std::string lineStr = readStr.substr(0, readStr.find("\n") - 1);
-		if (lineStr.find("WebSocket-Key") != -1) {
-			webSocketKey = lineStr.substr(lineStr.find("WebSocket-Key") + 15);
-			break;
+	if (readStr.find("\n") != -1)
+		while (readStr.empty() == false) {
+			std::string lineStr = readStr.substr(0, readStr.find("\n") - 1);
+			if (lineStr.find("WebSocket-Key") != -1) {
+				webSocketKey = lineStr.substr(lineStr.find("WebSocket-Key") + 15);
+				break;
+			}
+			readStr = readStr.substr(readStr.find("\n") + 1);
 		}
-		readStr = readStr.substr(readStr.find("\n") + 1);
-	}
 
 	std::string accept_key = WebSocketClient::generate_websocket_accept_key(webSocketKey);
 
@@ -24,6 +83,57 @@ void WebSocketClient::readHandle()
 		+ "\r\n";
 
 	m_channel->writeByteBuffer().append(response.c_str(), response.length());
+}
+
+void WebSocketClient::dealData(const char* buffer)
+{
+	char* newData = newDataFromBuffer(buffer);
+	std::string dataStr(newData);
+	dataStr = "echo: " + dataStr;
+	m_channel->writeByteBuffer().append(0x81);
+	//char length = (char)dataStr.length();
+	//m_channel->writeByteBuffer().append(length);
+	char* byte = nullptr;
+	int byteLength = 0;
+	getLengthBytes(dataStr.length(), byte, byteLength);
+	m_channel->writeByteBuffer().append(byte, byteLength);
+	m_channel->writeByteBuffer().append(dataStr.data(), dataStr.length());
+	delete[] newData;
+}
+
+void WebSocketClient::getLengthBytes(size_t contentLength, char*& byte, int& length)
+{
+	if (contentLength < 126) {
+		byte = new char[1];
+		length = 1;
+		byte[0] = contentLength;
+	}
+	else {
+		byte = new char[3];
+		memset(byte, 0, 3);
+		length = 3;
+		byte[0] = 126;
+		unsigned short a = (unsigned short)contentLength;
+		*((unsigned short*)(byte+1)) = a >> 8 | a << 8;
+	}
+}
+
+bool WebSocketClient::deal2Frame(const char* buffer)
+{
+	char byte = buffer[1];
+	char flag = byte >> 7 & 0x01;
+	return flag == 1 ? true : false;
+}
+
+void WebSocketClient::readHandle()
+{
+	const char* buffer = m_channel->readBuffer().data();
+	if (isShakeHands(buffer)) {
+		dealShakeHands(buffer);
+	}
+	else {
+		dealData(buffer);	//均使用明文返回
+	}
 }
 
 std::vector<uint8_t> WebSocketClient::sha1(const std::string& input)

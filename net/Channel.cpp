@@ -63,6 +63,7 @@ void Channel::handle()
 		int rtn = recv(m_fd, bufferAddr, m_readByteBuffer.capacity(), 0);
 		if (rtn > 0)
 		{
+			m_readByteBuffer.m_writePos = rtn;
 			m_handle->readHandle();
 		}
 		else
@@ -78,7 +79,7 @@ void Channel::handle()
 		m_handle->writeHandle();
 
 		m_writeByteBuffer;
-		int rtn = send(m_fd, m_writeByteBuffer.data(), 4096, 0);
+		int rtn = send(m_fd, m_writeByteBuffer.data(), m_writeByteBuffer.length(), 0);
 		if (rtn == m_writeByteBuffer.length())
 		{
 			m_writeByteBuffer.clear();
