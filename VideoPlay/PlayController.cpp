@@ -24,7 +24,7 @@ double PlayController::totalDuration()
 void PlayController::setPlaySpeed(double playSpeed)
 {
 	m_playSpeed = playSpeed;
-	setSeekTime(playTimeSeconds());
+	setSeekTime((long)playTimeSeconds());
 }
 
 void PlayController::setFrameRecall(frameRecall* func, void* v)
@@ -51,7 +51,9 @@ void PlayController::saveFrameToPng(AVFrame* frame, const char* path, AVCodecCon
 	//将视频帧转换成jpg图片，如果需要png则使用AV_CODEC_ID_PNG
 	int picSize = frameToImage(frame, AV_CODEC_ID_PNG, buf, bufSize, nullptr);
 	//写入文件
-	auto f = fopen(path, "wb+");
+	FILE* f = nullptr;
+	fopen_s(&f, path, "wb+");
+	//auto f = fopen(path, "wb+");
 	if (f)
 	{
 		fwrite(buf, sizeof(uint8_t), bufSize, f);
@@ -99,7 +101,7 @@ int PlayController::frameToImage(AVFrame* frame, enum AVCodecID codecID, uint8_t
     }else{
         ctx = codec_ctx;
     }
-
+	
 	if (ret < 0)
 	{
 		printf("avcodec_open2 error %d", ret);
@@ -294,9 +296,9 @@ int PlayController::startPlay()
 				//判断时间戳，是否缓存帧已经可以播放
 				if (m_playTime >= vFrame->pts * m_playDecoder->videoTimeBase())
 				{
-					int frameMs = vFrame->pts * m_playDecoder->videoTimeBase();
+					double frameMs = vFrame->pts * m_playDecoder->videoTimeBase();
 					if (m_func && !m_stop) 
-						m_func(vFrame, m_v, frameMs);
+						m_func(vFrame, m_v, (int)frameMs);
 
 					if (vFrame)
 					{

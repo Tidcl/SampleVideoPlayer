@@ -9,7 +9,7 @@ int ClickProgress::handle(int event)
 			int y = Fl::event_y();
 			double ratio = (double)(x - this->x()) / this->w(); // 计算点击位置在进度条中的比例
 			double new_value = this->minimum() + ratio * (this->maximum() - this->minimum()); // 计算新的value值
-			this->value(new_value); // 设置进度条的新值
+			this->value((float)new_value); // 设置进度条的新值
 			if (m_callFunc)m_callFunc(this, m_value);
 			return 1; // 表示事件被处理
 		}

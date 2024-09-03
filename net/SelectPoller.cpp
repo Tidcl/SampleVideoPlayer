@@ -48,7 +48,7 @@ void SelectPoller::poll()
 		{
 			if (isFinish == false)
 			{
-				int fd = mapItem.first;
+				SOCKET fd = mapItem.first;
 				std::shared_ptr<Channel> channel = mapItem.second;
 
 				if (FD_ISSET(fd, &m_readSet) | FD_ISSET(fd, &m_writeSet) | FD_ISSET(fd, &m_errorSet))

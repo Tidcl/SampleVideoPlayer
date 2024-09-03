@@ -34,7 +34,7 @@ void Channel::setHandle(std::shared_ptr<Handle> handle)
 	m_handle = handle;
 }
 
-void Channel::setFD(int fd)
+void Channel::setFD(SOCKET fd)
 {
 	m_fd = fd;
 }
@@ -45,7 +45,7 @@ void Channel::setPoller(std::shared_ptr<Poller> poller)
 	m_poller->addFD(m_fd, shared_from_this());
 }
 
-int Channel::fd()
+SOCKET Channel::fd()
 {
 	return m_fd;
 }
@@ -78,7 +78,7 @@ void Channel::handle()
 		m_handle->writeHandle();
 
 		m_writeByteBuffer;
-		int rtn = send(m_fd, m_writeByteBuffer.data(), m_writeByteBuffer.length(), 0);
+		int rtn = send(m_fd, m_writeByteBuffer.data(), 4096, 0);
 		if (rtn == m_writeByteBuffer.length())
 		{
 			m_writeByteBuffer.clear();
@@ -86,7 +86,8 @@ void Channel::handle()
 		}
 		else
 		{
-			m_writeByteBuffer.take(rtn);
+			char* buffer = m_writeByteBuffer.take(rtn);
+			delete[] buffer;
 		}
 	}
 }

@@ -1,14 +1,8 @@
-/*
- * @Author: xctang xctang@163.com
- * @Date: 2024-08-18 00:02:09
- * @LastEditors: xctang xctang@163.com
- * @LastEditTime: 2024-08-19 14:47:02
- * @FilePath: \VideoEditor\main.cpp
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
 //#include "net/testnet.hpp"
 
-#include "net/TcpServer.h"
+//#include "net/TcpServer.h"
+#include "net/HttpServer.h"
+#include "net/WebSocketServer.h"
 #include "net/SelectPoller.h"
 
 #include <FL/Fl.H>
@@ -54,8 +48,11 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();
-	std::shared_ptr<TcpServer> ts = std::make_shared<TcpServer>(spoller);
+	std::shared_ptr<HttpServer> ts = std::make_shared<HttpServer>(spoller);
 	ts->listen(spoller, 8890);
+	std::shared_ptr<WebSocketServer> tws = std::make_shared<WebSocketServer>(spoller);
+	tws->listen(spoller, 8891);
+
 	bool stopThread = false;
 	std::thread t([&stopThread, spoller]() {
 		while (!stopThread)

@@ -1,12 +1,18 @@
 #pragma once
 
 #include "Comman.h"
+#include <iostream>
+#include <iomanip>
+#include <ctime>
+#include <sstream>
+#include <vector>
+#include <fstream>
 
 class ByteBuffer {
 public:
 	ByteBuffer() = default;
 	ByteBuffer(ByteBuffer& other) {
-		this->init(other.m_capacity);
+		this->init((int)other.m_capacity);
 		memcpy_s(m_buffer, m_capacity, other.m_buffer, other.m_capacity);
 		this->m_capacity = other.m_capacity;
 		this->m_readPos = other.m_readPos;
@@ -25,7 +31,7 @@ public:
 	}
 
 	ByteBuffer& operator=(const ByteBuffer& other) {
-		this->init(other.m_capacity);
+		this->init((int)other.m_capacity);
 		memcpy_s(m_buffer, m_capacity, other.m_buffer, other.m_capacity);
 		this->m_capacity = other.m_capacity;
 		this->m_readPos = other.m_readPos;
@@ -61,20 +67,26 @@ public:
 		m_writePos = 0;
 	};
 
+	bool append(const char* data, size_t size) {
+		return this->append(data, (int)size);
+	}
+
 	bool append(const char* data, int size) {
 		if (m_writePos + size > m_capacity)
 		{
-			int newOpacity = m_capacity * 1.5;
-			while (newOpacity < m_writePos + size)
+			double newOpacity_ = m_capacity * 1.5;
+			while (newOpacity_ < m_writePos + size)
 			{
-				newOpacity = newOpacity * 1.5;
+				newOpacity_ = newOpacity_ * 1.5;
 			}
+
+			rsize_t newOpacity = (rsize_t)newOpacity_;
 			char* newBuffer = new char[newOpacity];
 			memset(newBuffer, 0, newOpacity);
 			memcpy_s(newBuffer, newOpacity, m_buffer, m_capacity);
 			delete[] m_buffer;
 			m_buffer = newBuffer;
-			m_capacity = newOpacity;
+			m_capacity = (std::streamsize)newOpacity;
 		}
 
 		int rtn = memcpy_s(m_buffer + m_writePos, m_capacity - m_writePos, data, size);
@@ -84,16 +96,18 @@ public:
 	};
 
 	char* data() {
-		return m_buffer;
+		return m_buffer + m_readPos;
 	};
 
-	char* take(int length) {
+	char* take(int length_) {
 		if (m_readPos == m_writePos) {
 			return nullptr;
 		}
 
 		char* readPos = m_buffer + m_readPos;
 		
+		std::streamsize length = length_;
+
 		if (length + m_readPos > m_writePos){
 			length = m_writePos - m_readPos;
 		}
@@ -110,19 +124,43 @@ public:
 	}
 
 	int length() {
-		return m_writePos;
+		return (int)(m_writePos - m_readPos);
 	};
 
 	int capacity() {
-		return m_capacity;
+		return (int)m_capacity;
 	}
 
 	bool empty() {
+		if (m_ifs && m_ifs->eof() == false){
+			readFileContent();
+		}
+		else if (m_ifs) {
+			m_ifs->close();
+			m_ifs = nullptr;
+		}
+
 		return m_writePos == 0 ? true : false;
 	};
+
+	void setIfstream(std::ifstream* ifs) { m_ifs = ifs; };
+
+	void readFileContent() {
+		//memset(m_buffer, 0, m_capacity);
+		//m_readPos = 0;
+		if (m_readPos != m_writePos)
+		{
+			return;
+		}
+		m_readPos = 0;
+		m_ifs->read(m_buffer, m_capacity);
+		m_writePos = m_ifs->gcount();
+	};
 private:
+	std::ifstream* m_ifs = nullptr;
+
 	char* m_buffer = nullptr;
-	int m_capacity = 0;
-	int m_writePos = 0;
-	int m_readPos = 0;
+	std::streamsize m_capacity = 0;
+	std::streamsize m_writePos = 0;
+	std::streamsize m_readPos = 0;
 };

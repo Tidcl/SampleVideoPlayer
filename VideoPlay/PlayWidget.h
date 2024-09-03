@@ -1,11 +1,3 @@
-/*
- * @Author: xctang xctang@163.com
- * @Date: 2024-08-18 11:38:44
- * @LastEditors: xctang xctang@163.com
- * @LastEditTime: 2024-08-19 16:01:51
- * @FilePath: \VideoEditor\VideoPlay\PlayWidget.h
- * @Description: ??????,???`customMade`, ??koroFileHeader???? ????: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
 #pragma once
 
 #include <FL/Fl.H>

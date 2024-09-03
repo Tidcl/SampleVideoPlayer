@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <iomanip>
 #include <ctime>
@@ -19,6 +21,8 @@ public:
 	void dealRestfulReq();
 
 	void dealFileQeq();
+
+	//void testDealWebSocket();
 
 	virtual void readHandle() override;
 

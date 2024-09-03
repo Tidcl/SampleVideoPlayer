@@ -16,9 +16,7 @@ public:
 
 	void listen(std::shared_ptr<Poller> poller, int port = 8890);
 
-	virtual void acceptHandle();
-
-private:
+protected:
 	std::shared_ptr<Poller> m_poller;
 	std::shared_ptr<Channel> m_acceptChannel;
 	std::string m_ip;
@@ -28,7 +26,7 @@ private:
 
 void TcpServer::listen(std::shared_ptr<Poller> poller, int port)
 {
-	int listen_fd;
+	SOCKET listen_fd;
 	struct sockaddr_in addr;
 
 	// 1. 创建一个TCP套接字
@@ -59,26 +57,6 @@ void TcpServer::listen(std::shared_ptr<Poller> poller, int port)
 
 	m_acceptChannel->setFD(listen_fd);
 	m_acceptChannel->setHandle(this->shared_from_this());
-	//m_poller->addFD(listen_fd, m_acceptChannel);
 	m_acceptChannel->setPoller(m_poller);
-
-
-	//m_acceptor = std::make_shared<TcpAcceptor>(poller);
-	//m_acceptor->init(port);
 }
 
-void TcpServer::acceptHandle()
-{
-	int fd = m_acceptChannel->fd();
-	sockaddr addr;
-	int slen = sizeof(addr);
-	int clientFd = accept(fd, &addr, &slen);
-	if (clientFd > 0)
-	{
-		std::shared_ptr<HttpClient> tcpClient = std::make_shared<HttpClient>();
-		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
-		clientChannel->setFD(clientFd);
-		tcpClient->setChannel(clientChannel); 
-		clientChannel->setPoller(m_poller);
-	}
-}

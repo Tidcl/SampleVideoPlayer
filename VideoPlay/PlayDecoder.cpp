@@ -270,7 +270,7 @@ void PlayDecoder::videoSeek(long timeMs)
 
 	m_seekFlag = true;
 	//std::unique_lock<std::mutex> guard(m_mutex);
-	long timeStep = timeMs / videoTimeBase();
+	long timeStep = (long)(timeMs / videoTimeBase());
 
 	if (av_seek_frame(m_formatContext, video_stream_index, timeStep, AVSEEK_FLAG_BACKWARD) < 0) {
 		fprintf(stderr, "Could not seek to position.\n");

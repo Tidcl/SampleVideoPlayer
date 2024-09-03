@@ -69,9 +69,9 @@ void updateLabel(void* _info)
 		simg = cimg;
 
 
-		info->_progress->minimum(0);
-		info->_progress->maximum(info->_totalProgressValue);
-		info->_progress->value(info->_progressValue);
+		info->_progress->minimum((float)0);
+		info->_progress->maximum((float)info->_totalProgressValue);
+		info->_progress->value((float)info->_progressValue);
 		info->_progress->redraw();
 	}
 
@@ -86,8 +86,8 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 {
 	//界面位置
 	m_input = new Fl_Input(x, 5, w, 20, "");
-	m_btn = new Fl_Button(x + 30, this->y() + 30, w*0.4, 20, "播放");
-	m_pauseBtn = new Fl_Button(x + 30 + w*0.5, this->y() + 30, w*0.4, 20, "暂停");
+	m_btn = new Fl_Button(x + 30, this->y() + 30, (int)(w * 0.4), 20, "播放");
+	m_pauseBtn = new Fl_Button(x + 30 + (int)(w*0.5), this->y() + 30, (int)(w*0.4), 20, "暂停");
 	m_label = new Fl_Box(x, m_btn->y() + m_btn->h() + 10, w, w/16*9, "");
 	m_progress = new ClickProgress(x, m_label->y() + m_label->h(), w - 70, 20);
 	m_choice = new Fl_Choice(x + m_progress->w() + 10, m_label->y() + m_label->h(), 60, 20);
@@ -200,5 +200,5 @@ void PlayWidget::progress_play()
 {
 	double progressValue = m_progress->value();
 	//double timeStep = progressValue * (double)AV_TIME_BASE;
-	m_pc.setSeekTime(progressValue * 1000);
+	m_pc.setSeekTime((long)progressValue * 1000);
 }

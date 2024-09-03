@@ -11,12 +11,12 @@ public:
 
 	virtual void poll() {};
 
-	void addFD(int fd, std::shared_ptr<Channel> channel) { 
+	void addFD(SOCKET fd, std::shared_ptr<Channel> channel) { 
 		m_fdMap.insert({ fd, channel});
 	};
 	void rmFD(int fd) {
 		m_fdMap.erase(fd);
 	};
 protected:
-	std::map<int, std::shared_ptr<Channel>> m_fdMap;
+	std::map<SOCKET, std::shared_ptr<Channel>> m_fdMap;
 };
