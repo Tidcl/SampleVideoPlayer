@@ -33,8 +33,10 @@ char* WebSocketClient::newDataFromBuffer(const char* buffer)
 		length = lengthByteBuffer;
 		dataBuffer = buffer + 8; 
 	}
-	else
-	{
+	else if (length == 0) {
+		return nullptr;
+	}
+	else{
 		dataBuffer = buffer + 6;
 	}
 	
@@ -88,17 +90,25 @@ void WebSocketClient::dealShakeHands(const char* buffer)
 void WebSocketClient::dealData(const char* buffer)
 {
 	char* newData = newDataFromBuffer(buffer);
-	std::string dataStr(newData);
-	dataStr = "echo: " + dataStr;
-	m_channel->writeByteBuffer().append(0x81);
-	//char length = (char)dataStr.length();
-	//m_channel->writeByteBuffer().append(length);
-	char* byte = nullptr;
-	int byteLength = 0;
-	getLengthBytes(dataStr.length(), byte, byteLength);
-	m_channel->writeByteBuffer().append(byte, byteLength);
-	m_channel->writeByteBuffer().append(dataStr.data(), dataStr.length());
-	delete[] newData;
+	if (newData)
+	{
+		std::string dataStr(newData);
+		dataStr = "echo: " + dataStr;
+		m_channel->writeByteBuffer().append(0x81);
+		char* byte = nullptr;
+		int byteLength = 0;
+		getLengthBytes(dataStr.length(), byte, byteLength);
+		m_channel->writeByteBuffer().append(byte, byteLength);
+		m_channel->writeByteBuffer().append(dataStr.data(), dataStr.length());
+		delete[] newData;
+	}
+	else
+	{
+		m_channel->writeByteBuffer().append(0x88);
+		m_channel->writeByteBuffer().append(0x00);
+		m_channel->writeByteBuffer().append(0x00);
+		m_channel->writeByteBuffer().append(0x00);
+	}
 }
 
 void WebSocketClient::getLengthBytes(size_t contentLength, char*& byte, int& length)
