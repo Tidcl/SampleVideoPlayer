@@ -1,9 +1,9 @@
 //#include "net/testnet.hpp"
 
 //#include "net/TcpServer.h"
-#include "net/HttpServer.h"
-#include "net/WebSocketServer.h"
-#include "net/SelectPoller.h"
+#include "HttpServer.h"
+#include "WebSocketServer.h"
+#include "SelectPoller.h"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>

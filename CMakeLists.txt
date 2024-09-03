@@ -29,9 +29,14 @@ link_directories(./develep/zlib/build/Debug)
 
 
 include_directories("./net/")
+include_directories("./net/Http/")
+include_directories("./net/WebSocket/")
+
 
 file(GLOB PlaySrc "./VideoPlay/*.cpp")
 file(GLOB NetSrc "./net/*.cpp")
+file(GLOB HttpSrc "./net/Http/*.cpp")
+file(GLOB WebSocketSrc "./net/WebSocket/*.cpp")
 
 
 message("..........................................................................................................................................")
@@ -42,7 +47,7 @@ message(".......................................................................
 
 
 
-add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc})
+add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc} ${HttpSrc} ${WebSocketSrc})
 
 #set_target_properties(VideoEditor PROPERTIES
 #    RUNTIME_OUTPUT_DIRECTORY C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/bin
