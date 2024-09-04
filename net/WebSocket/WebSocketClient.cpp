@@ -94,7 +94,7 @@ void WebSocketClient::dealData(const char* buffer)
 	{
 		std::string dataStr(newData);
 		dataStr = "echo: " + dataStr;
-		m_channel->writeByteBuffer().append(0x81);
+		m_channel->writeByteBuffer().append((char)0x81);
 		char* byte = nullptr;
 		int byteLength = 0;
 		getLengthBytes(dataStr.length(), byte, byteLength);
@@ -104,10 +104,10 @@ void WebSocketClient::dealData(const char* buffer)
 	}
 	else
 	{
-		m_channel->writeByteBuffer().append(0x88);
-		m_channel->writeByteBuffer().append(0x00);
-		m_channel->writeByteBuffer().append(0x00);
-		m_channel->writeByteBuffer().append(0x00);
+		m_channel->writeByteBuffer().append((char)0x88);
+		m_channel->writeByteBuffer().append((char)0x00);
+		m_channel->writeByteBuffer().append((char)0x00);
+		m_channel->writeByteBuffer().append((char)0x00);
 	}
 }
 
@@ -116,7 +116,7 @@ void WebSocketClient::getLengthBytes(size_t contentLength, char*& byte, int& len
 	if (contentLength < 126) {
 		byte = new char[1];
 		length = 1;
-		byte[0] = contentLength;
+		byte[0] = (char)contentLength;
 	}
 	else {
 		byte = new char[3];

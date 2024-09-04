@@ -14,7 +14,7 @@ public:
 	void addFD(SOCKET fd, std::shared_ptr<Channel> channel) { 
 		m_fdMap.insert({ fd, channel});
 	};
-	void rmFD(int fd) {
+	void rmFD(SOCKET fd) {
 		m_fdMap.erase(fd);
 	};
 protected:
