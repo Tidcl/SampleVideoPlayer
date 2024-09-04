@@ -22,6 +22,7 @@ void PlayDecoder::setPlayController(std::shared_ptr<PlayController> controller)
 void PlayDecoder::initDecode(std::string url)
 {
 	freeDecode();
+	freeBuffer();
 
 	const char* video_file = url.c_str();
 
@@ -217,7 +218,7 @@ void PlayDecoder::startDecode()
 									}
 									//std::unique_lock<std::mutex> guard(m_mutex);
 									//printf("push frame time step = %lf\n", backTime);
-									if (m_videoFrameVec.size() > 0) m_videoFrameVec.push_back(tempFrame);
+									if (lastFrameTimeStep != -1 && m_videoFrameVec.size() > 0) m_videoFrameVec.push_back(tempFrame);
 									else av_frame_free(&tempFrame);
 								}
 							}
@@ -255,12 +256,13 @@ void PlayDecoder::stopDecode()
 	if (m_decodeThread && m_decodeThread->joinable())
 	{
 		m_stopDecode = true;
-		printf("等待线程退出...\n");
+		std::cout << "wait thread exit..." << std::endl;
 		m_decodeThread->join();
-		printf("解码线程退出成功\n");
+		printf("decode thread exit successful\n");
 		delete m_decodeThread;
 		m_decodeThread = nullptr;
 		freeBuffer();
+		freeDecode();
 	}
 }
 

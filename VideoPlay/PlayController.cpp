@@ -258,6 +258,7 @@ int PlayController::startPlay()
 				m_syncCond.notify_all();
 				//printf("播放线程唤醒解码线程\n");
 				m_seekFlag = false;
+				continue;
 			}
 
 			//如果用户停止播放，记录暂停的时间
@@ -300,7 +301,7 @@ int PlayController::startPlay()
 					if (m_func && !m_stop) 
 						m_func(vFrame, m_v, (int)frameMs);
 
-					if (vFrame)
+					if (vFrame && !m_stop)
 					{
 						av_frame_free(&vFrame);
 						if (m_playDecoder->videoFrameVector().size() > 0)
@@ -332,9 +333,10 @@ void PlayController::stopPlay()
 		}
 
 		m_stop = true;
-		printf("等待线程退出...\n");
+		printf("wait thread exit...\n");
 		m_playThread->join();
-		printf("播放控制线程退出\n");
+		printf("play controller thread exit\n");
 		delete m_playThread;
+		m_playThread = nullptr;
 	}
 }

@@ -12,6 +12,7 @@ extern "C"
 #include <deque>
 #include <mutex>
 #include <memory>
+#include <windows.h>
 
 class PlayController;
 //用于将解复用器中解码的视频帧和音频帧放入处理队列
@@ -37,8 +38,9 @@ public:
 
 	double videoTimeBase() { return (video_time_base.num * 1.0 / video_time_base.den) * 1000; };
 	double audioTimeBase() { return (audio_time_base.num * 1.0 / audio_time_base.den) * 1000; };
+
 private:
-	std::thread* m_decodeThread;
+	std::thread* m_decodeThread = nullptr;
 	bool m_stopDecode;
 
 	std::shared_ptr<PlayController> m_playController = nullptr;//

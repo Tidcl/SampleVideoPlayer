@@ -186,21 +186,12 @@ void PlayWidget::btn_play_do()
 void PlayWidget::choice_playSpeed()
 {
 	const char* str = m_choice->text();
-	//int strlen = std::strlen(str);
-	//char* newStr = new char[strlen];
-	//strcpy_s(newStr, strlen, str+1);
-
 	double playSpeed = std::stod(str + 1);
-	//m_pc.setPause(true);
 	m_pc->setPlaySpeed(playSpeed);
-	//m_pc.setPause(false)
-
-	//delete[] newStr;
 }
 
 void PlayWidget::progress_play()
 {
 	double progressValue = m_progress->value();
-	//double timeStep = progressValue * (double)AV_TIME_BASE;
 	m_pc->setSeekTime((long)progressValue * 1000);
 }

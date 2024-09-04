@@ -40,7 +40,7 @@
 //}
 
 int main(int argc, char *argv[]) {
-
+	//SetConsoleOutputCP(65001);
 	//初始化网络
 	WSADATA wsaData;
 	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -93,6 +93,7 @@ int main(int argc, char *argv[]) {
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
 	int lrtn = Fl::run();
 	stopThread = true;
+	co_sched.Stop();
 	t.join();
 	return lrtn;
 
