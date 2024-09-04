@@ -5,6 +5,7 @@
 #include "WebSocketServer.h"
 #include "SelectPoller.h"
 
+#include <coroutine.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Window.H>
@@ -54,12 +55,17 @@ int main(int argc, char *argv[]) {
 	tws->listen(spoller, 8891);
 
 	bool stopThread = false;
-	std::thread t([&stopThread, spoller]() {
+
+	go [&stopThread, spoller]() {
 		while (!stopThread)
 		{
 			//Sleep(1);
 			spoller->poll();
 		}
+	};
+
+	std::thread t([]() {
+		co_sched.Start();
 	});
 
 	//std::vector<std::shared_ptr<A>> aVec;

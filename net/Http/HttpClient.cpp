@@ -10,7 +10,7 @@ void HttpClient::readHandle()
 	m_reqUrlPath = readStr.substr(startIndex + 2, endIndex - startIndex - 2);
 
 	//是否能在当前目录中找到html文件
-	size_t suffixIndex = m_reqUrlPath.find(".");
+	int suffixIndex = (int)m_reqUrlPath.find(".");
 	if (suffixIndex == -1)
 	{
 		if (fileExists(m_reqUrlPath + ".html")) {

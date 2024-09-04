@@ -1,3 +1,4 @@
+#include <coroutine.h>
 #include "Channel.h"
 
 void Channel::updateEventType()
@@ -64,6 +65,8 @@ void Channel::handle()
 		if (rtn > 0)
 		{
 			m_readByteBuffer.m_writePos = rtn;
+			//go std::bind(&Handle::readHandle, m_handle);
+
 			m_handle->readHandle();
 		}
 		else
@@ -76,14 +79,19 @@ void Channel::handle()
 	}
 	else if (eventType() == TEventType::writeEvent)
 	{
-		m_handle->writeHandle();
-
-		m_writeByteBuffer;
+		//m_handle->writeHandle();
+		//m_writeByteBuffer;
 		int rtn = send(m_fd, m_writeByteBuffer.data(), m_writeByteBuffer.length(), 0);
 		if (rtn == m_writeByteBuffer.length())
 		{
 			m_writeByteBuffer.clear();
 			m_focusEventType = TEventType::readEvent;
+		}
+		else if (rtn == -1)
+		{
+			m_poller->rmFD(m_fd);
+			closesocket(m_fd);
+			m_handle.reset();	//释放掉handler
 		}
 		else
 		{
@@ -91,4 +99,6 @@ void Channel::handle()
 			delete[] buffer;
 		}
 	}
+
+	//co_yield;
 }

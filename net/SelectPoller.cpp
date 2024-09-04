@@ -13,6 +13,10 @@ void SelectPoller::poll()
 	auto fdMap = this->m_fdMap;
 
 	int fdCount = 0;
+
+	struct timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 10;
 	for (auto mapItem : fdMap)
 	{
 		fdCount++;
@@ -38,9 +42,10 @@ void SelectPoller::poll()
 	}
 
 	//重新设置fd到各种set
-	int activeFdCount = ::select(fdCount, &m_readSet, &m_writeSet, &m_errorSet, nullptr);
+	int activeFdCount = ::select(fdCount, &m_readSet, &m_writeSet, &m_errorSet, &timeout);
 
 	//读事件
+	bool isActive = false;
 	for (int i = 0; i < activeFdCount; i++)
 	{
 		bool isFinish = false;
@@ -53,12 +58,17 @@ void SelectPoller::poll()
 
 				if (FD_ISSET(fd, &m_readSet) | FD_ISSET(fd, &m_writeSet) | FD_ISSET(fd, &m_errorSet))
 				{
-					channel->handle();
 					isFinish = true;
+					isActive = true;
+					go co_scheduler(co_sched) [channel]() {
+						channel->handle();
+					};
 				}
 			}
 		}
 	}
+
+	if(isActive) co_yield;
 
 	////检查fd是否触发事件
 	//FD_ISSET(fd, &m_readSet);	//调用readHandle

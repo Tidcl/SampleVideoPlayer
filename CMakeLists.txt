@@ -2,23 +2,27 @@ cmake_minimum_required(VERSION 3.5.0)
 project(VideoEditor VERSION 0.1.0 LANGUAGES C CXX)
 
 #fltk
-find_package(FLTK REQUIRED PATHS ./develep/fltk-1.3.9/build)
+find_package(FLTK REQUIRED PATHS ../develep/fltk-1.3.9/build)
 include_directories(${FLTK_INCLUDE_DIR})
-link_directories(./develep/fltk-1.3.9/build/lib/Debug)
+link_directories(../develep/fltk-1.3.9/build/lib/Debug)
 
 #ffmpeg
-include_directories(./develep/ffmpeg-7.0.1/build-release/include)
-link_directories(./develep/ffmpeg-7.0.1/build-release/bin)
+include_directories(../develep/ffmpeg-7.0.1/build-release/include)
+link_directories(../develep/ffmpeg-7.0.1/build-release/bin)
 
 #zlib
-include_directories(./develep/zlib)
-link_directories(./develep/zlib/build/Debug)
+include_directories(../develep/zlib)
+link_directories(../develep/zlib/build/Debug)
 
 #opencv
 #include_directories(./develep/opencv-4.10.0/build/install/include)
 #link_directories(./develep/opencv-4.10.0/build/install/x64/vc17/lib)
 #file(GLOB opencv_libs "C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/lib/*.lib")
 #find_package(OPENCV REQUIRED PATHS C:/Users/xctan/Code/opencv-4.10.0/build/install)
+
+#libgo
+include_directories(../develep/libgo/include)
+link_directories(../develep/libgo/lib)
 
 #设置运行目录 可以通过set_target_properties
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/bin)
@@ -57,5 +61,6 @@ target_link_libraries(VideoEditor fltkd fltk_zd fltk_jpegd fltk_pngd fltk_images
 target_link_libraries(VideoEditor avcodec avdevice avfilter avformat avutil swresample swscale)
 target_link_libraries(VideoEditor zlibd zlibstaticd)
 target_link_libraries(VideoEditor ${opencv_libs})
+target_link_libraries(VideoEditor libgo)
 # 查找 WinSock 库
 target_link_libraries(VideoEditor ws2_32)
