@@ -104,7 +104,9 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 	m_choice->callback(&PlayWidget::btn_clicked, this);
 	m_progress->setCallBackFunc(&PlayWidget::btn_clicked, this);
 
-	m_pc.setFrameRecall([](void* f, void* thi, double playTimeMS) {
+
+	m_pc = std::make_shared<PlayController>();
+	m_pc->setFrameRecall([](void* f, void* thi, double playTimeMS) {
 		void* imgDataPtr = nullptr;
 		PlayWidget* thii = (PlayWidget*)thi;
 		Fl_RGB_Image* img1 = AVFrameToFlRGBImage((AVFrame*)f, imgDataPtr); //得到新的pix
@@ -115,7 +117,7 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 
 		info->_progress = thii->m_progress;
 		info->_progressValue = playTimeMS * 0.001;
-		info->_totalProgressValue = thii->m_pc.totalDuration();
+		info->_totalProgressValue = thii->m_pc->totalDuration();
 		Fl::awake(updateLabel, info);//此处直接设计一个函数，参数也指定传入label和image深拷贝
 		Fl::check();
 	}, this);
@@ -157,16 +159,16 @@ void PlayWidget::btn_clicked(Fl_Widget* widget, void* v)
 
 void PlayWidget::btn_pause_do()
 {
-	if (m_pc.status() == PlayStatus::stop)
+	if (m_pc->status() == PlayStatus::stop)
 	{
 		return;
 	}
-	m_pc.setPause(!m_pc.pause());
+	m_pc->setPause(!m_pc->pause());
 }
 
 void PlayWidget::btn_play_do()
 {
-	PlayController* pc = &m_pc;
+	std::shared_ptr<PlayController> pc = m_pc;
 
 	if (pc->status() == PlayStatus::stop)
 	{
@@ -190,7 +192,7 @@ void PlayWidget::choice_playSpeed()
 
 	double playSpeed = std::stod(str + 1);
 	//m_pc.setPause(true);
-	m_pc.setPlaySpeed(playSpeed);
+	m_pc->setPlaySpeed(playSpeed);
 	//m_pc.setPause(false)
 
 	//delete[] newStr;
@@ -200,5 +202,5 @@ void PlayWidget::progress_play()
 {
 	double progressValue = m_progress->value();
 	//double timeStep = progressValue * (double)AV_TIME_BASE;
-	m_pc.setSeekTime((long)progressValue * 1000);
+	m_pc->setSeekTime((long)progressValue * 1000);
 }

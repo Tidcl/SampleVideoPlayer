@@ -43,7 +43,7 @@ private:
 
 	std::shared_ptr<PlayController> m_playController = nullptr;//
 
-	AVFormatContext* m_formatContext;
+	AVFormatContext* m_formatContext = nullptr;
 	//视频解码相关对象
 	AVCodecParameters* video_codecpar = nullptr;
 	AVCodec* video_codec = nullptr;

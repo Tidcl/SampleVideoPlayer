@@ -125,9 +125,9 @@ void PlayDecoder::freeDecode()
 	video_stream_index = -1;
 
 
-	avformat_close_input(&m_formatContext);
-	avcodec_free_context(&audio_context);
-	avcodec_free_context(&video_context);
+	if(m_formatContext) avformat_close_input(&m_formatContext);
+	if(audio_context) avcodec_free_context(&audio_context);
+	if(video_context) avcodec_free_context(&video_context);
 
 	m_formatContext = nullptr;
 	video_context = nullptr;

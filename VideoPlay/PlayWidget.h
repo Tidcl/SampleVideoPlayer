@@ -50,7 +50,7 @@ private:
     ClickProgress* m_progress = nullptr;  //进度条
     Fl_Choice* m_choice = nullptr;  //下拉框
 
-    PlayController m_pc;    //播放器对象
+    std::shared_ptr<PlayController> m_pc = nullptr;    //播放器对象
 
     friend static void btn_clicked(Fl_Widget* widget, void* v); //声明友元函数
 };
