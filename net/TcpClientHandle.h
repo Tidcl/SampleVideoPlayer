@@ -3,17 +3,18 @@
 #include <memory>
 #include "Poller.h"
 
-class TcpClient : public Handle, public std::enable_shared_from_this<TcpClient>{	//在服务器程序创建客户端对象，就是服务客户端的
+class TcpClientHandle : public Handle, public std::enable_shared_from_this<TcpClientHandle>{	//在服务器程序创建客户端对象，就是服务客户端的
 public:
-	TcpClient() = default;
-	~TcpClient() {
+	TcpClientHandle() = default;
+	~TcpClientHandle() {
 	};
 
 	void setChannel(std::shared_ptr<Channel> channel){
 		m_channel = channel;
 		m_channel->setEventType(TEventType::readEvent);
-		m_channel->setHandle(shared_from_this());
 	};
+
+	void setFD(SOCKET fd) { if (m_channel)m_channel->setFD(fd); };
 
 	virtual void readHandle() override
 	{
@@ -27,6 +28,10 @@ public:
 	virtual void errorHandle() override
 	{
 	};
+
+	virtual void closeHandle() override 
+	{
+	}
 protected:
 	std::shared_ptr<Channel> m_channel;
 

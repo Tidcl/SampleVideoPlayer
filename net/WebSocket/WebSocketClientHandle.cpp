@@ -1,6 +1,6 @@
-#include "WebSocketClient.h"
+#include "WebSocketClientHandle.h"
 
-bool WebSocketClient::isShakeHands(const char* buffer)
+bool WebSocketClientHandle::isShakeHands(const char* buffer)
 {
 	if (buffer[6] == 'H' || buffer[7] == 'T' || buffer[8] == 'T' || buffer[9] == 'P') {
 		return true;
@@ -20,7 +20,7 @@ bool WebSocketClient::isShakeHands(const char* buffer)
 	//}
 }
 
-char* WebSocketClient::newDataFromBuffer(const char* buffer)
+char* WebSocketClientHandle::newDataFromBuffer(const char* buffer)
 {
 	const char* dataBuffer = nullptr;
 	bool isMask = deal2Frame(buffer);
@@ -60,7 +60,7 @@ char* WebSocketClient::newDataFromBuffer(const char* buffer)
 	return newData;
 }
 
-void WebSocketClient::dealShakeHands(const char* buffer)
+void WebSocketClientHandle::dealShakeHands(const char* buffer)
 {
 	std::string readStr(buffer);
 	printf("recv:\n%s\n", readStr.c_str());
@@ -75,7 +75,7 @@ void WebSocketClient::dealShakeHands(const char* buffer)
 			readStr = readStr.substr(readStr.find("\n") + 1);
 		}
 
-	std::string accept_key = WebSocketClient::generate_websocket_accept_key(webSocketKey);
+	std::string accept_key = WebSocketClientHandle::generate_websocket_accept_key(webSocketKey);
 
 	std::string response;
 	response = response + "HTTP/1.1 101 Switching Protocols\r\n"
@@ -87,7 +87,7 @@ void WebSocketClient::dealShakeHands(const char* buffer)
 	m_channel->writeByteBuffer().append(response.c_str(), response.length());
 }
 
-void WebSocketClient::dealData(const char* buffer)
+void WebSocketClientHandle::dealData(const char* buffer)
 {
 	char* newData = newDataFromBuffer(buffer);
 	if (newData)
@@ -111,7 +111,7 @@ void WebSocketClient::dealData(const char* buffer)
 	}
 }
 
-void WebSocketClient::getLengthBytes(size_t contentLength, char*& byte, int& length)
+void WebSocketClientHandle::getLengthBytes(size_t contentLength, char*& byte, int& length)
 {
 	if (contentLength < 126) {
 		byte = new char[1];
@@ -128,14 +128,14 @@ void WebSocketClient::getLengthBytes(size_t contentLength, char*& byte, int& len
 	}
 }
 
-bool WebSocketClient::deal2Frame(const char* buffer)
+bool WebSocketClientHandle::deal2Frame(const char* buffer)
 {
 	char byte = buffer[1];
 	char flag = byte >> 7 & 0x01;
 	return flag == 1 ? true : false;
 }
 
-void WebSocketClient::readHandle()
+void WebSocketClientHandle::readHandle()
 {
 	const char* buffer = m_channel->readBuffer().data();
 	if (isShakeHands(buffer)) {
@@ -146,7 +146,7 @@ void WebSocketClient::readHandle()
 	}
 }
 
-std::vector<uint8_t> WebSocketClient::sha1(const std::string& input)
+std::vector<uint8_t> WebSocketClientHandle::sha1(const std::string& input)
 {
 	uint32_t h0 = 0x67452301;
 	uint32_t h1 = 0xEFCDAB89;
@@ -223,7 +223,7 @@ std::vector<uint8_t> WebSocketClient::sha1(const std::string& input)
 	return hash;
 }
 
-std::string WebSocketClient::base64_encode(const std::vector<uint8_t>& data)
+std::string WebSocketClientHandle::base64_encode(const std::vector<uint8_t>& data)
 {
 	static const char* base64_chars =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -245,7 +245,7 @@ std::string WebSocketClient::base64_encode(const std::vector<uint8_t>& data)
 	return encoded;
 }
 
-std::string WebSocketClient::generate_websocket_accept_key(const std::string& sec_websocket_key)
+std::string WebSocketClientHandle::generate_websocket_accept_key(const std::string& sec_websocket_key)
 {
 	std::string guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 	std::string key = sec_websocket_key + guid;
@@ -257,7 +257,7 @@ std::string WebSocketClient::generate_websocket_accept_key(const std::string& se
 	return base64_encode(sha1_hash);
 }
 
-std::string WebSocketClient::construct_websocket_handshake_response(const std::string& sec_websocket_key)
+std::string WebSocketClientHandle::construct_websocket_handshake_response(const std::string& sec_websocket_key)
 {
 	std::string accept_key = generate_websocket_accept_key(sec_websocket_key);
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TcpServer.h"
-#include "WebSocketClient.h"
+#include "WebSocketClientHandle.h"
 
 class WebSocketServer : public TcpServer {
 public:
@@ -19,7 +19,7 @@ void WebSocketServer::acceptHandle()
 	SOCKET clientFd = accept(fd, &addr, &slen);
 	if (clientFd > 0)
 	{
-		std::shared_ptr<WebSocketClient> tcpClient = std::make_shared<WebSocketClient>();
+		std::shared_ptr<WebSocketClientHandle> tcpClient = std::make_shared<WebSocketClientHandle>();
 		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
 		clientChannel->setFD(clientFd);
 

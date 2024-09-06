@@ -71,9 +71,7 @@ void Channel::handle()
 		}
 		else
 		{
-			m_poller->rmFD(m_fd);
-			closesocket(m_fd);
-			m_handle.reset();	//释放掉handler
+			closeHandle();
 		}
 
 	}
@@ -101,4 +99,12 @@ void Channel::handle()
 	}
 
 	//co_yield;
+}
+
+void Channel::closeHandle()
+{
+	m_poller->rmFD(m_fd);
+	closesocket(m_fd);
+	m_handle->closeHandle();
+	m_handle.reset();	//释放掉handler
 }

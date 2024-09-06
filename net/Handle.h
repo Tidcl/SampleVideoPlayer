@@ -14,6 +14,7 @@ public:
 	virtual void readHandle() {};
 	virtual void writeHandle() {};
 	virtual void errorHandle() {};
+	virtual void closeHandle() {};
 
 	std::shared_ptr<Channel> m_connect;
 };

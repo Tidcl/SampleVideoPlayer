@@ -1,8 +1,6 @@
 #include "SelectPoller.h"
-//
-//#pragma comment(lib, "Ws2_32.lib")
-//#pragma comment(lib,"Iphlpapi.lib")
 
+//poll目前只关注了网络 可以利用循环加入定时任务或者一些延时任务处理
 void SelectPoller::poll()
 {
 	//清空fd_set

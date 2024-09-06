@@ -6,11 +6,11 @@
 #include <sstream>
 #include <vector>
 #include <fstream>
-#include "TcpClient.h"
-class WebSocketClient : public TcpClient {
+#include "TcpClientHandle.h"
+class WebSocketClientHandle : public TcpClientHandle {
 public:
-	WebSocketClient() {};
-	~WebSocketClient() {};
+	WebSocketClientHandle() {};
+	~WebSocketClientHandle() {};
 
 	enum FrameType {
 

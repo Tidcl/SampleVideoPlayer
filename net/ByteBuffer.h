@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 class ByteBuffer {
 public:
@@ -121,6 +122,41 @@ public:
 		return d;
 	}
 
+	const char* FindFirstCrlf() const {
+		const char* crlf = std::search(Peek(), BeginWrite(), kCRLF, kCRLF + 2);
+		return crlf == BeginWrite() ? nullptr : crlf;
+	}
+
+	const char* FindLastCrlf() const {
+		const char* crlf = std::find_end(Peek(), BeginWrite(), kCRLF, kCRLF + 2);
+		return crlf == BeginWrite() ? nullptr : crlf;
+	}
+
+	const char* FindLastCrlfCrlf() const {
+		char crlfCrlf[] = "\r\n\r\n";
+		const char* crlf = std::find_end(Peek(), BeginWrite(), crlfCrlf, crlfCrlf + 4);
+		return crlf == BeginWrite() ? nullptr : crlf;
+	}
+
+	void Retrieve(size_t len) {
+		if (len <= (size_t)(m_writePos - m_readPos)) {
+			m_readPos += len;
+			if (m_readPos == m_writePos) {
+				m_writePos = 0;
+				m_readPos = 0;
+			}
+		}
+		else {
+			m_writePos = 0;
+			m_readPos = 0;
+		}
+	}
+
+	void RetrieveUntil(const char* end)
+	{
+		Retrieve(end - Peek());
+	}
+
 	void clear() {
 		memset(m_buffer, 0 ,m_capacity);
 		m_writePos = 0;
@@ -168,4 +204,37 @@ public:
 	std::streamsize m_capacity = 0;
 	std::streamsize m_writePos = 0;
 	std::streamsize m_readPos = 0;
+
+
+	////////////////////// copyright
+		char* Peek()
+		{
+			return Begin() + m_readPos;
+		}
+
+		const char* Peek() const
+		{
+			return Begin() + m_readPos;
+		}
+
+		char* Begin()
+		{
+			return m_buffer;
+		}
+
+		const char* Begin() const
+		{
+			return m_buffer;
+		}
+
+		char* beginWrite()
+		{
+			return Begin() + m_writePos;
+		}
+
+		const char* BeginWrite() const
+		{
+			return Begin() + m_writePos;
+		}
+		static const char kCRLF[];
 };

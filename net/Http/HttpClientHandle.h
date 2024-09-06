@@ -6,12 +6,14 @@
 #include <sstream>
 #include <vector>
 #include <fstream>
-#include "TcpClient.h"
+#include "TcpClientHandle.h"
 
-class HttpClient : public TcpClient{
+class HttpClientHandle : public TcpClientHandle{
 public:
-	HttpClient() = default;
-	~HttpClient() = default;
+	HttpClientHandle() = default;
+	~HttpClientHandle() = default;
+
+	virtual void readHandle() override;
 
 	enum REQTYPE {
 		RESTFUL,
@@ -23,8 +25,6 @@ public:
 	void dealFileQeq();
 
 	//void testDealWebSocket();
-
-	virtual void readHandle() override;
 
 	std::string getCurrentTimeInGMT();
 
