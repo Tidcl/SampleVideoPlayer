@@ -40,7 +40,7 @@ protected:
 private:
 	Fl_Box* m_frameShow = nullptr;  //帧画板
 	//操作图源在画板的位置
-	int m_moveOffset = 5;
+	int m_moveOffset = 1;	//按下一次修改位置的步进长度
 	Fl_Button* m_up = nullptr; //上移图源位置
 	void btn_up_do();
 	Fl_Button* m_down = nullptr; //下移图源位置
