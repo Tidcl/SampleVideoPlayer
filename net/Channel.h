@@ -17,19 +17,21 @@ public:
 	};
 	~Channel() { };
 
-	SOCKET fd();
-	void handle();
-	void closeHandle();
-	void setHandle(std::shared_ptr<Handle> handle);
 	void setFD(SOCKET fd);
+	void setHandle(std::shared_ptr<Handle> handle);
+	SOCKET fd();
+	
 	void setPoller(std::shared_ptr<Poller> poller);
+	void handle();
+
+	void closeHandle();
 
 	ByteBuffer& writeByteBuffer() { return m_writeByteBuffer; };
 	ByteBuffer& readBuffer() { return m_readByteBuffer; };
 
-	void updateEventType();	//根据buffer中的内容更新关注的事件
-	void setEventType(TEventType et);
-	TEventType eventType();
+	void updateEventType();	//根据buffer中的内容更新fd应该关注的事件
+	void setEventType(FDEventType et);
+	FDEventType eventType();
 
 	void setWriteFile(std::ifstream* ifs) { m_writeByteBuffer.setIfstream(ifs); };
 private:
@@ -38,5 +40,5 @@ private:
 	ByteBuffer m_readByteBuffer;
 	ByteBuffer m_writeByteBuffer;
 	std::shared_ptr<Handle> m_handle;
-	TEventType m_focusEventType = TEventType::none;	//如果写缓存有数据，那么关注write事件，当write事件触发就将数据写出去。如果写缓存为空，那么关于read事件，当read事件触发就从fd读取数据，并交给handle处理。
+	FDEventType m_focusEventType = FDEventType::none;	//如果写缓存有数据，那么关注write事件，当write事件触发就将数据写出去。如果写缓存为空，那么关于read事件，当read事件触发就从fd读取数据，并交给handle处理。
 };

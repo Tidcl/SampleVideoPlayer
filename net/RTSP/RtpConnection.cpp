@@ -21,8 +21,6 @@ RtpConnection::RtpConnection(std::weak_ptr<Channel> rtsp_connection)
 	}
 
 	auto conn = rtsp_connection_.lock();
-	//rtsp_ip_ = conn->GetIp();
-	//rtsp_port_ = conn->GetPort();
 }
 
 RtpConnection::~RtpConnection()
@@ -37,16 +35,6 @@ RtpConnection::~RtpConnection()
 		}
 	}
 }
-
-//int RtpConnection::GetId() const
-//{
-//	auto conn = rtsp_connection_.lock();
-//	if (!conn) {
-//		return -1;
-//	}
-//	RtspConnection *rtspConn = (RtspConnection *)conn.get();
-//	return rtspConn->GetId();
-//}
 
 bool RtpConnection::SetupRtpOverTcp(MediaChannelId channel_id, uint16_t rtp_channel, uint16_t rtcp_channel)
 {
@@ -242,22 +230,6 @@ int RtpConnection::SendRtpPacket(MediaChannelId channel_id, RtpPacket pkt)
 
 	RtspConnection *rtsp_conn = (RtspConnection *)conn.get();
 
-	//bool ret = rtsp_conn->task_scheduler_->AddTriggerEvent([this, channel_id, pkt] {
-	//	this->SetFrameType(pkt.type);
-	//	this->SetRtpHeader(channel_id, pkt);
-	//	if((media_channel_info_[channel_id].is_play || media_channel_info_[channel_id].is_record) && has_key_frame_ ) {            
-	//		if(transport_mode_ == RTP_OVER_TCP) {
-	//			SendRtpOverTcp(channel_id, pkt);
-	//		}
-	//		else {
-	//			SendRtpOverUdp(channel_id, pkt);
-	//		}
- //                  
-	//		//media_channel_info_[channel_id].octetCount  += pkt.size;
-	//		//media_channel_info_[channel_id].packetCount += 1;
-	//	}
-	//});
-
 	this->SetFrameType(pkt.type);
 	this->SetRtpHeader(channel_id, pkt);
 	if ((media_channel_info_[channel_id].is_play || media_channel_info_[channel_id].is_record) && has_key_frame_) {
@@ -267,9 +239,6 @@ int RtpConnection::SendRtpPacket(MediaChannelId channel_id, RtpPacket pkt)
 		else {
 			SendRtpOverUdp(channel_id, pkt);
 		}
-
-		//media_channel_info_[channel_id].octetCount  += pkt.size;
-		//media_channel_info_[channel_id].packetCount += 1;
 	}
 
 	return 1 ? 0 : -1;

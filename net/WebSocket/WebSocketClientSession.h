@@ -7,10 +7,10 @@
 #include <vector>
 #include <fstream>
 #include "TcpClientHandle.h"
-class WebSocketClientHandle : public TcpClientHandle {
+class WebSocketClientSession : public TcpClientHandle {
 public:
-	WebSocketClientHandle() {};
-	~WebSocketClientHandle() {};
+	WebSocketClientSession() {};
+	~WebSocketClientSession() {};
 
 	enum FrameType {
 

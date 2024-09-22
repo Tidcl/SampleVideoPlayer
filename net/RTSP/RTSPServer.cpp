@@ -8,7 +8,7 @@ void RTSPServer::acceptHandle()
 	SOCKET clientFd = accept(fd, &addr, &slen);
 	if (clientFd > 0)
 	{
-		std::shared_ptr<RTSPClientHandle> clientHandle = std::make_shared<RTSPClientHandle>(std::dynamic_pointer_cast<RTSPServer>(shared_from_this()));
+		std::shared_ptr<RTSPClientSession> clientHandle = std::make_shared<RTSPClientSession>(std::dynamic_pointer_cast<RTSPServer>(shared_from_this()));
 		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();	//channel负责读写，事件检测后，channel就将字符读到缓冲
 		clientHandle->setChannel(clientChannel);	//关联后续处理函数
 		clientChannel->setFD(clientFd);	//管理fd

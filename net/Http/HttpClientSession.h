@@ -8,10 +8,10 @@
 #include <fstream>
 #include "TcpClientHandle.h"
 
-class HttpClientHandle : public TcpClientHandle{
+class HttpClientSession : public TcpClientHandle{
 public:
-	HttpClientHandle() = default;
-	~HttpClientHandle() = default;
+	HttpClientSession() = default;
+	~HttpClientSession() = default;
 
 	virtual void readHandle() override;
 

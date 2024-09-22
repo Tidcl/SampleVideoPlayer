@@ -7,7 +7,6 @@
 #include <string>
 #include "Channel.h"
 #include "H264Source.h"
-#include "RTSPClientHandle.h"
 #include "RtpConnection.h"
 
 class RTSPSession : public std::enable_shared_from_this<RTSPSession> {
@@ -15,7 +14,6 @@ public:
 	RTSPSession(std::string url_suffix = "live");
 	~RTSPSession() {};
 
-	//向会话添加一个源，并用channel_id作为索引
 	void addSource(MediaChannelId channel_id, MediaSource* source);
 
 	void addPullClient(std::shared_ptr<RtpConnection> rtpClientHandle);

@@ -11,7 +11,7 @@ public:
 
 	void setChannel(std::shared_ptr<Channel> channel){
 		m_channel = channel;
-		m_channel->setEventType(TEventType::readEvent);
+		m_channel->setEventType(FDEventType::readEvent);
 	};
 
 	void setFD(SOCKET fd) { if (m_channel)m_channel->setFD(fd); };

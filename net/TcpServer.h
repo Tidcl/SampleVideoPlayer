@@ -9,7 +9,7 @@ class TcpServer : public Handle, public std::enable_shared_from_this<TcpServer> 
 public:
 	TcpServer(std::shared_ptr<Poller> poller) : m_poller(poller) {
 		m_acceptChannel = std::make_shared<Channel>();
-		m_acceptChannel->setEventType(TEventType::acceptEvent);
+		m_acceptChannel->setEventType(FDEventType::acceptEvent);
 	};
 	~TcpServer() = default;
 

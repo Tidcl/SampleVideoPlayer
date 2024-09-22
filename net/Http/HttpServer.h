@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TcpServer.h"
-#include "HttpClientHandle.h"
+#include "HttpClientSession.h"
 
 class HttpServer : public TcpServer {
 public:
@@ -16,7 +16,7 @@ public:
 		SOCKET clientFd = accept(fd, &addr, &slen);
 		if (clientFd > 0)
 		{
-			std::shared_ptr<HttpClientHandle> tcpClient = std::make_shared<HttpClientHandle>();
+			std::shared_ptr<HttpClientSession> tcpClient = std::make_shared<HttpClientHandle>();
 			std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
 			clientChannel->setFD(clientFd);
 			tcpClient->setChannel(clientChannel);

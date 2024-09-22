@@ -5,7 +5,6 @@
 Fl_RGB_Image* AVFrameToFlRGBImage(AVFrame* frame, void*& dataAddr) {
 	if (frame == nullptr) return nullptr;
 
-
 	int width = frame->width;
 	int height = frame->height;
 
@@ -101,8 +100,8 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 	//回调设置
 	m_btn->callback(PlayWidget::btn_clicked, this);
 	m_pauseBtn->callback(PlayWidget::btn_clicked, this);
-	m_choice->callback(&PlayWidget::btn_clicked, this);
-	m_progress->setCallBackFunc(&PlayWidget::btn_clicked, this);
+	m_choice->callback(PlayWidget::btn_clicked, this);
+	m_progress->setCallBackFunc(PlayWidget::btn_clicked, this);
 
 
 	m_pc = std::make_shared<PlayController>();

@@ -20,14 +20,12 @@ void TcpServer::listen(int port /*= 8890*/)
 	// 3. 绑定套接字到指定的IP地址和端口
 	if (bind(listen_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
 		perror("bind failed");
-		//close(listen_fd);
 		exit(EXIT_FAILURE);
 	}
 
 	// 4. 将套接字置于监听状态
 	if (::listen(listen_fd, 5) == -1) {
 		perror("listen failed");
-		//close(listen_fd);
 		exit(EXIT_FAILURE);
 	}
 

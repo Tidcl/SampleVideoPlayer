@@ -3,28 +3,28 @@
 
 void Channel::updateEventType()
 {
-	if (m_focusEventType == TEventType::acceptEvent)	//accept事件的channel不会切换事件，因此不需要改变
+	if (m_focusEventType == FDEventType::acceptEvent)	//accept事件的channel不会切换事件，因此不需要改变
 	{
 		return;
 	}
 
 	if (m_writeByteBuffer.empty() == false)
 	{
-		m_focusEventType = TEventType::writeEvent;
+		m_focusEventType = FDEventType::writeEvent;
 	}
 	else
 	{
-		m_focusEventType = TEventType::readEvent;
+		m_focusEventType = FDEventType::readEvent;
 	}
 }
 
 
-void Channel::setEventType(TEventType et)
+void Channel::setEventType(FDEventType et)
 {
 	m_focusEventType = et;
 }
 
-TEventType Channel::eventType()
+FDEventType Channel::eventType()
 {
 	updateEventType();
 	return m_focusEventType;
@@ -53,11 +53,11 @@ SOCKET Channel::fd()
 
 void Channel::handle()
 {
-	if (eventType() == TEventType::acceptEvent)
+	if (eventType() == FDEventType::acceptEvent)
 	{
 		m_handle->acceptHandle();
 	}
-	else if (eventType() == TEventType::readEvent)
+	else if (eventType() == FDEventType::readEvent)
 	{
 		m_readByteBuffer.clear();
 		char* bufferAddr = const_cast<char*>(m_readByteBuffer.data());
@@ -65,7 +65,6 @@ void Channel::handle()
 		if (rtn > 0)
 		{
 			m_readByteBuffer.m_writePos = rtn;
-			//go std::bind(&Handle::readHandle, m_handle);
 
 			m_handle->readHandle();
 		}
@@ -75,15 +74,13 @@ void Channel::handle()
 		}
 
 	}
-	else if (eventType() == TEventType::writeEvent)
+	else if (eventType() == FDEventType::writeEvent)
 	{
-		//m_handle->writeHandle();
-		//m_writeByteBuffer;
 		int rtn = send(m_fd, m_writeByteBuffer.data(), m_writeByteBuffer.length(), 0);
 		if (rtn == m_writeByteBuffer.length())
 		{
 			m_writeByteBuffer.clear();
-			m_focusEventType = TEventType::readEvent;
+			m_focusEventType = FDEventType::readEvent;
 		}
 		else if (rtn == -1)
 		{
@@ -97,8 +94,6 @@ void Channel::handle()
 			delete[] buffer;
 		}
 	}
-
-	//co_yield;
 }
 
 void Channel::closeHandle()

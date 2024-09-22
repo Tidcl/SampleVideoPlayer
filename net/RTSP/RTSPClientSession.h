@@ -27,7 +27,7 @@ enum RTSP_METHOD {
 	Embedded
 };
 
-class RTSPClientHandle : public TcpClientHandle {
+class RTSPClientSession : public TcpClientHandle {
 public:
 	enum ConnectionState
 	{
@@ -35,9 +35,9 @@ public:
 		START_PLAY,
 		START_PUSH
 	};
-	RTSPClientHandle();
-	RTSPClientHandle(std::shared_ptr<RTSPServer> server);
-	~RTSPClientHandle() {};
+	RTSPClientSession();
+	RTSPClientSession(std::shared_ptr<RTSPServer> server);
+	~RTSPClientSession() {};
 
 	virtual void readHandle() override;
 	virtual void closeHandle() override;

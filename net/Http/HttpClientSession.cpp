@@ -1,7 +1,6 @@
-#include "HttpClientHandle.h"
-#include "WebSocketClientHandle.h"
+#include "HttpClientSession.h"
 
-void HttpClientHandle::readHandle()
+void HttpClientSession::readHandle()
 {
 	//testDealWebSocket();
 	std::string readStr(m_channel->readBuffer().data());
@@ -27,7 +26,7 @@ void HttpClientHandle::readHandle()
 	}
 }
 
-void HttpClientHandle::dealRestfulReq()
+void HttpClientSession::dealRestfulReq()
 {
 	char strbuf[1024];
 	ByteBuffer response;
@@ -54,7 +53,7 @@ void HttpClientHandle::dealRestfulReq()
 	m_channel->writeByteBuffer() = response;
 }
 
-void HttpClientHandle::dealFileQeq()
+void HttpClientSession::dealFileQeq()
 {
 	std::string fileSuffix = m_reqUrlPath.substr(m_reqUrlPath.find(".") + 1);
 	char strbuf[1024];
@@ -133,7 +132,7 @@ void HttpClientHandle::dealFileQeq()
 
 
 
-//void HttpClientHandle::testDealWebSocket()
+//void HttpClientSession::testDealWebSocket()
 //{
 //	std::string readStr(m_channel->readBuffer().data());
 //	printf("recv:\n%s\n", readStr.c_str());
@@ -159,7 +158,7 @@ void HttpClientHandle::dealFileQeq()
 //	m_channel->writeByteBuffer().append(response.c_str(), response.length());
 //}
 
-std::string HttpClientHandle::getCurrentTimeInGMT()
+std::string HttpClientSession::getCurrentTimeInGMT()
 {
 	// 获取当前时间并转换为时间结构
 	std::time_t now = std::time(nullptr);
@@ -169,7 +168,7 @@ std::string HttpClientHandle::getCurrentTimeInGMT()
 	return std::string(buffer);
 }
 
-std::string HttpClientHandle::getContentType(std::string& fileSuffix)
+std::string HttpClientSession::getContentType(std::string& fileSuffix)
 {
 	if (fileSuffix == "html" || fileSuffix == "plain")
 	{
@@ -199,7 +198,7 @@ std::string HttpClientHandle::getContentType(std::string& fileSuffix)
 	return "application/" + fileSuffix;
 }
 
-bool HttpClientHandle::fileExists(const std::string& filename)
+bool HttpClientSession::fileExists(const std::string& filename)
 {
 	std::ifstream file(filename);
 	return file.good();

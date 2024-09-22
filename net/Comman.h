@@ -7,7 +7,7 @@
 #include <map>
 #include "Socket.h"
 
-enum TEventType {
+enum FDEventType {
 	none = 0,
 	acceptEvent,
 	readEvent,
