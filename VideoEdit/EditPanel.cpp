@@ -4,9 +4,9 @@
 EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	:Fl_Group(x,y,w,h, str)
 {
-	m_frameShow = new Fl_Box(100, 30, w - 100, h - 50, "show img");
+	m_frameShow = new Fl_Box(100, 10, w - 100, h - 50);
 
-	int contolerYOffset = 5;
+	int contolerYOffset = 10;
 	m_up = new Fl_Button(30, 0 + contolerYOffset, 30, 20, "up");
 	m_down = new Fl_Button(30, 20 + contolerYOffset, 30, 20, "down");
 	m_left = new Fl_Button(0, 0 + contolerYOffset, 30, 40, "left");
@@ -17,7 +17,7 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	m_addLay = new Fl_Button(0, 80, 45, 30, "add lay");
 	m_delLay = new Fl_Button(50, 80, 45, 30, "del lay");
 
-	m_moveLabel = new MoveLabel(100, 30, 30, 30, "X");
+	m_moveLabel = new MoveLabel(100, 10, 150, 50, "");
 
 	m_up->callback(&EditPanel::btn_clicked, this);
 	m_down->callback(&EditPanel::btn_clicked, this);
@@ -34,12 +34,12 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	imgSource1.imgMat = cv::imread(imgSource1.url, cv::IMREAD_COLOR);
 	imgSource1.x = 0;
 	imgSource1.y = 0;
-	imgSource1.width = w - 100;
-	imgSource1.height = h - 50;
+	imgSource1.width = m_frameShow->w();
+	imgSource1.height = m_frameShow->h();
 	ImgSource imgSource2;
 	imgSource2.url = "C:/Users/xctan/Pictures/4.jpg";
 	imgSource2.imgMat = cv::imread(imgSource2.url, cv::IMREAD_COLOR);
-	imgSource2.x = 0;
+	imgSource2.x = 150;
 	imgSource2.y = 0;
 	imgSource2.width = 50;
 	imgSource2.height = 50;
@@ -47,7 +47,7 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	imgSource3.url = "C:/Users/xctan/Pictures/5.jpg";
 	imgSource3.imgMat = cv::imread(imgSource3.url, cv::IMREAD_COLOR);
 	imgSource3.x = 0;
-	imgSource3.y = 50;
+	imgSource3.y = 0;
 	imgSource3.width = 150;
 	imgSource3.height = 50;
 	addImgSource(imgSource1);
@@ -83,10 +83,10 @@ void EditPanel::updateAFrame()
 {
 	//创建合成帧缓冲
 	cv::Mat bufferFrame = cv::Mat::zeros(cv::Size(m_frameShow->w(), m_frameShow->h()), CV_8UC3);
-	//cv::Mat bufferFrame(m_frameShow->w(), m_frameShow->h(), CV_8UC3, cv::Scalar(0, 0, 0));
 	bufferFrame.setTo(cv::Scalar(255, 255, 255));
 
 	//便利图源合成到合成帧中
+	cv::Mat resizeImgMat;
 	for (ImgSource& imgSour : m_imgSourceVec) 
 	{
 		int x = imgSour.x;
@@ -96,8 +96,7 @@ void EditPanel::updateAFrame()
 
 		//将图源重新缩放
 		//cv::Mat resizeImgMat = bufferFrame(cv::Rect(x, y, width, height));
-		cv::Mat resizeImgMat;
-		cv::resize(imgSour.imgMat, resizeImgMat, cv::Size(width, height), 0, 0, cv::INTER_LINEAR);
+		cv::resize(imgSour.imgMat, resizeImgMat, cv::Size(width, height));
 		//如果焦点区域超出就需要裁剪原图
 		resizeImgMat.copyTo(bufferFrame(cv::Rect(x, y, width, height)));
 		//imgMat.copyTo(resizeImgMat);
@@ -108,15 +107,15 @@ void EditPanel::updateAFrame()
 	cv::cvtColor(bufferFrame, rgbImgMat, cv::COLOR_BGR2RGB);
 	m_showcvMat = rgbImgMat;	//显示合成帧存到成员变量
 
+	if (m_showFrame) delete m_showFrame;
 	m_showFrame = new Fl_RGB_Image(rgbImgMat.data,	//该数据很可能随着rgbImgMat的生命周期变成悬挂指针
 		rgbImgMat.cols,
 		rgbImgMat.rows,
 		3,
 		rgbImgMat.step);
-	
 
-	Fl_Image* cimg = m_showFrame->copy(m_frameShow->w(), m_frameShow->h());
-	m_frameShow->image(cimg);
+	//Fl_Image* cimg = m_showFrame->copy(m_frameShow->w(), m_frameShow->h());
+	m_frameShow->image(m_showFrame);
 	//m_frameShow->redraw();
 	redraw();
 }
@@ -168,7 +167,7 @@ void EditPanel::addImgSource(ImgSource imgSource)
 
 	m_layChoice->add(intStr);
 	m_layChoice->value(m_imgSourceVec.size() - 1);
-	resetMoveLabel(m_imgSourceVec.size() - 1);
+	//resetMoveLabel(m_imgSourceVec.size() - 1);
 }
 
 void EditPanel::removeSource(int index)

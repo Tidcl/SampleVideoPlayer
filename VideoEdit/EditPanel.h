@@ -53,8 +53,7 @@ private:
 	void btn_addLay_do();
 	Fl_Button* m_delLay = nullptr;	//É¾³ýÍ¼²ã
 	void btn_delLay_do();
-	//Ñ¡Ôñ¿ØÖÆµÄÍ¼²ã
-	Fl_Choice* m_layChoice = nullptr;	//
+	Fl_Choice* m_layChoice = nullptr;	//Ñ¡ÔñÍ¼²ã
 	void popmenu_do();
 
 	cv::Mat m_showcvMat;		//cvÖ¡»º´æ
