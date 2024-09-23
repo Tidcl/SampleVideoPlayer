@@ -4,7 +4,7 @@
 EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	:Fl_Group(x,y,w,h, str)
 {
-	m_frameShow = new Fl_Box(100, 10, w - 100, h - 50);
+	m_frameShow = new Fl_Box(100, 10, w - 100, h - 50);	//400 270
 
 	int contolerYOffset = 10;
 	m_up = new Fl_Button(30, 0 + contolerYOffset, 30, 20, "up");
@@ -79,6 +79,14 @@ EditPanel::~EditPanel()
 	m_delLay = nullptr;
 }
 
+void EditPanel::startPusher(FramePusher* pusher)
+{
+	m_framePusher = pusher;
+	updateAFrame();
+	//if (m_framePusher->initFFmpeg() == 0)
+		m_framePusher->startPush();
+}
+
 void EditPanel::updateAFrame()
 {
 	//创建合成帧缓冲
@@ -94,12 +102,12 @@ void EditPanel::updateAFrame()
 		int width = imgSour.width;
 		int height = imgSour.height;
 
+		//该逻辑需要扩展，用以支持当长宽超出画板的图片截取
+
 		//将图源重新缩放
-		//cv::Mat resizeImgMat = bufferFrame(cv::Rect(x, y, width, height));
 		cv::resize(imgSour.imgMat, resizeImgMat, cv::Size(width, height));
 		//如果焦点区域超出就需要裁剪原图
 		resizeImgMat.copyTo(bufferFrame(cv::Rect(x, y, width, height)));
-		//imgMat.copyTo(resizeImgMat);
 	}
 
 	//合成帧更新到界面
@@ -114,9 +122,8 @@ void EditPanel::updateAFrame()
 		3,
 		rgbImgMat.step);
 
-	//Fl_Image* cimg = m_showFrame->copy(m_frameShow->w(), m_frameShow->h());
 	m_frameShow->image(m_showFrame);
-	//m_frameShow->redraw();
+	if(m_framePusher) m_framePusher->updateMat(bufferFrame);
 	redraw();
 }
 

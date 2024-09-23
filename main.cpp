@@ -20,6 +20,7 @@
 #include "VideoPlay/PlayWidget.h"
 #include "VideoEdit/EditPanel.h"
 #include "VideoEdit/MoveLabel.h"
+#include "VideoEdit/FramePusher.h"
 //#include "VideoEdit/testOpencv.cpp"
 #include <windows.h>
 #include <mmsystem.h>
@@ -52,6 +53,14 @@ void sendFrameThread(RTSPServer* server, MediaSessionId sessionId, H264File* fil
 int main(int argc, char *argv[]) {
 		
 	timeBeginPeriod(1);		//初始化计时分辨率
+
+	//cv::Mat img = cv::imread("C:/Users/xctan/Pictures/2.jpg", cv::IMREAD_COLOR);
+	//FramePusher pusher;
+	//pusher.updateMat(img);
+	//pusher.initFFmpeg();
+	//pusher.startPush();
+
+
 	//SetConsoleOutputCP(65001);	//设置控制台输出的编码方式
 	// 
 	////初始化网络
@@ -94,7 +103,8 @@ int main(int argc, char *argv[]) {
 	//	co_sched.Start();
 	//});
 
-
+	FramePusher pusher;
+	pusher.initFFmpeg();
 
 	Fl_Window fw(0, 0, 800, 600);
 	PlayWidget form(0, 0, 800, 600, "");
@@ -105,8 +115,9 @@ int main(int argc, char *argv[]) {
 	
 	//{
 		Fl_Window fw1(0, 0, 500, 320);
-		EditPanel ep(0, 0, 500, 320, "editPanelInstance");
 
+		EditPanel ep(0, 0, 500, 320, "editPanelInstance");
+		ep.startPusher(&pusher);
 
 		//使用scroll实现类似list，但是里面的组件位置需要自己算
 		//Fl_Scroll scroll(0, 0, 80, 40, "imgScroll");
