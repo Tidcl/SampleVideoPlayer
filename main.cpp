@@ -21,6 +21,7 @@
 #include "VideoEdit/EditPanel.h"
 #include "VideoEdit/MoveLabel.h"
 #include "VideoEdit/FramePusher.h"
+//#include "VideoEdit/PushOpencv.h"
 //#include "VideoEdit/testOpencv.cpp"
 #include <windows.h>
 #include <mmsystem.h>
@@ -49,17 +50,11 @@
 //线程向session里面的rtp连接发送帧
 void sendFrameThread(RTSPServer* server, MediaSessionId sessionId, H264File* file);
 
-
 int main(int argc, char *argv[]) {
 		
 	timeBeginPeriod(1);		//初始化计时分辨率
 
-	//cv::Mat img = cv::imread("C:/Users/xctan/Pictures/2.jpg", cv::IMREAD_COLOR);
-	//FramePusher pusher;
-	//pusher.updateMat(img);
-	//pusher.initFFmpeg();
-	//pusher.startPush();
-
+	//testCameraPush();
 
 	//SetConsoleOutputCP(65001);	//设置控制台输出的编码方式
 	// 
@@ -91,7 +86,7 @@ int main(int argc, char *argv[]) {
 	//t1.detach();
 	//
 	//bool stopThread = false;
-	////创建协程
+	//创建协程
 	//go [&stopThread, spoller]() {
 	//	while (!stopThread)
 	//	{
@@ -103,43 +98,25 @@ int main(int argc, char *argv[]) {
 	//	co_sched.Start();
 	//});
 
+
+
+
 	FramePusher pusher;
-	pusher.initFFmpeg();
+	pusher.openCodec();
 
 	Fl_Window fw(0, 0, 800, 600);
 	PlayWidget form(0, 0, 800, 600, "");
 	fw.show(argc, argv);
 
-
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-	
-	//{
-		Fl_Window fw1(0, 0, 500, 320);
-
-		EditPanel ep(0, 0, 500, 320, "editPanelInstance");
-		ep.startPusher(&pusher);
-
-		//使用scroll实现类似list，但是里面的组件位置需要自己算
-		//Fl_Scroll scroll(0, 0, 80, 40, "imgScroll");
-		//Fl_Box m_backgroundImg(0, 0, 80, 20, "background img");  //背景图
-		//Fl_Box m_timeImg(0, 20, 80, 20, "time img");  //
-		//Fl_Box m_img(0, 40, 80, 20, "img");  //
-		//scroll.add(&m_backgroundImg);
-		//scroll.add(&m_timeImg);
-		//scroll.add(&m_img);
-		//scroll.end();
-
-		//MoveLabel ml(0, 200, 100,100, "move label");
-
-		fw1.end();
-		fw1.show(argc, argv);
-	//}
-
+	Fl_Window fw1(0, 0, 500, 320);
+	EditPanel ep(0, 0, 500, 320, "editPanelInstance");
+	ep.startPusher(&pusher);
+	fw1.end();
+	fw1.show(argc, argv);
 	int lrtn = Fl::run();
-
-
 	//stopThread = true;
-	co_sched.Stop();
+	//co_sched.Stop();
 	//t.join();
 	return lrtn;
 }

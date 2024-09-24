@@ -53,7 +53,9 @@ message(".......................................................................
 
 
 
-add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc}  "VideoEdit/EditPanel.h" "VideoEdit/EditPanel.cpp" "VideoEdit/MoveLabel.h" "VideoEdit/MoveLabel.cpp" "VideoEdit/FramePusher.h" "VideoEdit/FramePusher.cpp")
+add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc} 
+"VideoEdit/EditPanel.h" "VideoEdit/EditPanel.cpp" "VideoEdit/MoveLabel.h" "VideoEdit/MoveLabel.cpp" 
+"VideoEdit/FramePusher.h" "VideoEdit/FramePusher.cpp" )
 
 #set_target_properties(VideoEditor PROPERTIES
 #    RUNTIME_OUTPUT_DIRECTORY C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/bin

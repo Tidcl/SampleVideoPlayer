@@ -11,13 +11,13 @@ FramePusher::~FramePusher()
 	stopPush();
 }
 
-void FramePusher::updateMat(cv::Mat mat)
+void FramePusher::updateFrame(cv::Mat mat)
 {
 	m_updateMat = mat;
 	m_updateFlag = true;
 }
 
-int FramePusher::initFFmpeg()
+int FramePusher::openCodec()
 {
 	//::CoUninitialize();
 	// 输出格式设置为RTMP推流
@@ -44,19 +44,25 @@ int FramePusher::initFFmpeg()
 
 	codec_ctx->width = m_width;
 	codec_ctx->height = m_height;
+	codec_ctx->codec_id = AV_CODEC_ID_H264;
+	codec_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
 	codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-	codec_ctx->time_base = AVRational{ 1, m_frameRate }; // 每秒帧
-	codec_ctx->framerate = AVRational{ m_frameRate, 1 };
-	codec_ctx->gop_size = 10;
-	codec_ctx->max_b_frames = 1;
-	codec_ctx->bit_rate = m_bitRate;
+	int ration = 1;
+	codec_ctx->time_base = AVRational{ 1 * ration, m_frameRate * ration }; // 每秒帧
+	codec_ctx->framerate = AVRational{ m_frameRate * ration, 1 * ration };
+	codec_ctx->gop_size = 1;
+	codec_ctx->max_b_frames = 0;
+	//codec_ctx->bit_rate = m_width * m_height * 8 * 3;
 
 	if (fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
 		codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
 
+	AVDictionary* opt = nullptr;
+	av_dict_set(&opt, "tune", "zerolatency", 0);
+
 	int rtn = 0;
- 	if ((rtn = avcodec_open2(codec_ctx, codec, nullptr)) < 0) {
+ 	if ((rtn = avcodec_open2(codec_ctx, codec, &opt)) < 0) {
 		std::cerr << "无法打开编码器" << std::endl;
 		return -1;
 	}
@@ -67,6 +73,8 @@ int FramePusher::initFFmpeg()
 	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) {
 		avcodec_free_context(&ptr);
 		});
+
+	av_dump_format(fmt_ctx, 0, m_serverPath.c_str(), 1);
 	return 0;
 }
 
@@ -81,6 +89,7 @@ int FramePusher::pushing()
 		std::cerr << "无法创建视频流" << std::endl;
 		return -1;
 	}
+	//stream->time_base = codec_ctx->time_base;
 
 	avcodec_parameters_from_context(stream->codecpar, codec_ctx);
 
@@ -98,6 +107,7 @@ int FramePusher::pushing()
 		return -1;
 	}
 
+	//stream->time_base = codec_ctx->time_base;
 	// 初始化图像转换上下文
 	SwsContext* sws_ctx = sws_getContext(
 		codec_ctx->width, codec_ctx->height, AV_PIX_FMT_BGR24,
@@ -110,7 +120,7 @@ int FramePusher::pushing()
 	frame->format = codec_ctx->pix_fmt;
 	frame->width = codec_ctx->width;
 	frame->height = codec_ctx->height;
-	av_frame_get_buffer(frame, 0);
+	av_frame_get_buffer(frame, 32);
 
 	AVPacket pkt;
 	av_init_packet(&pkt);
@@ -119,43 +129,59 @@ int FramePusher::pushing()
 
 	int frame_index = 0;
 
-	//cv::Mat pushMat;
 	cv::Mat img;
 	img = m_updateMat;
-
 	while (!m_stopPullFlag) {
+		auto start = std::chrono::high_resolution_clock::now();
+
+
 		if (m_updateFlag)
 		{
 			img = m_updateMat;
 			m_updateFlag = false;
 		}
-		if (img.empty()) continue;
+		img = m_updateMat;
 
+		if (img.empty()) continue;
 		// 将BGR24转换为YUV420P
 		uint8_t* inData[1] = { img.data };
 		int inLinesize[1] = { static_cast<int>(img.step) };
 		sws_scale(sws_ctx, inData, inLinesize, 0, codec_ctx->height, frame->data, frame->linesize);
+		frame->pts = frame_index++;//frame->pkt_dts = frame->pts;
+		// 设置帧的 PTS
+		//frame->pts = av_rescale_q(frame->pts, stream->time_base, codec_ctx->time_base);
 
-		frame->pts = frame_index++;
-
+		//std::cout << "发送给编码器时 pts=" << frame->pts << " dts=" << frame->pkt_dts << std::endl;
 		if (avcodec_send_frame(codec_ctx, frame) < 0) {
 			std::cerr << "无法发送帧到编码器" << std::endl;
-			return -1;
 		}
 
-		if (avcodec_receive_packet(codec_ctx, &pkt) == 0) {
+		while (avcodec_receive_packet(codec_ctx, &pkt) == 0) {
+			
+			//std::cout << "刚从编码器接收到的包 pts=" << pkt.pts << " dts=" << pkt.dts << " time=" << pkt.pts * (1.0/m_frameRate) << "s" << std::endl;
+			//av_packet_rescale_ts(&pkt, codec_ctx->time_base, stream->time_base);
+
 			pkt.stream_index = stream->index;
-			av_packet_rescale_ts(&pkt, codec_ctx->time_base, stream->time_base);
+			pkt.pts = av_rescale_q(pkt.pts, codec_ctx->time_base, stream->time_base);
+			pkt.dts = av_rescale_q(pkt.dts, codec_ctx->time_base, stream->time_base);
+			pkt.duration = av_rescale_q(pkt.duration, codec_ctx->time_base, stream->time_base);
+			//pkt.duration = 0;
 			pkt.pos = -1;
 
 			if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0) {
 				std::cerr << "无法写入帧" << std::endl;
-				//return -1;
 			}
 
 			av_packet_unref(&pkt);
 		}
-		std::this_thread::sleep_for(std::chrono::microseconds(1));
+
+		auto durationUs = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count();
+		int microTime = (1000000 / m_frameRate) - durationUs;
+		//std::cout << "sleep " << microTime * 0.001 << "ms" << std::endl;
+		//std::this_thread::sleep_for(std::chrono::microseconds(microTime / (m_frameRate * 8)));
+		std::this_thread::sleep_for(std::chrono::microseconds(microTime));
+
+		//std::cout << "loop time " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << "ms" << std::endl;
 	}
 
 	// 写文件尾

@@ -87,6 +87,11 @@ void EditPanel::startPusher(FramePusher* pusher)
 		m_framePusher->startPush();
 }
 
+//void EditPanel::startPusher(PushOpencv* pusher)
+//{
+//	m_pushOpencv = pusher;
+//}
+
 void EditPanel::updateAFrame()
 {
 	//创建合成帧缓冲
@@ -123,7 +128,9 @@ void EditPanel::updateAFrame()
 		rgbImgMat.step);
 
 	m_frameShow->image(m_showFrame);
-	if(m_framePusher) m_framePusher->updateMat(bufferFrame);
+	if(m_framePusher) m_framePusher->updateFrame(bufferFrame);
+	//if (m_pushOpencv) m_pushOpencv->push_frame(bufferFrame);
+
 	redraw();
 }
 

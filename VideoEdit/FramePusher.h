@@ -14,8 +14,8 @@ class FramePusher {
 public:
 	FramePusher();
 	~FramePusher();
-	void updateMat(cv::Mat mat);
-	int initFFmpeg();
+	void updateFrame(cv::Mat mat);
+	int openCodec();
 	void startPush();
 	void stopPush();
 private:
@@ -28,8 +28,8 @@ private:
 	std::string m_serverPath = "rtmp://127.0.0.1/live/livestream";	//推流地址
 	int m_width = 400;	//推流帧宽度
 	int m_height = 270;	//推流帧高度
-	int m_bitRate = 400000;	//推流比特率
-	int m_frameRate = 30;	//推流帧率
+	int m_bitRate = 1000 * 125;	//推流比特率
+	int m_frameRate = 24;	//推流帧率
 	cv::Mat m_updateMat;	//用来更新推送mat
 	bool m_updateFlag = false;		//mat更新标志位
 

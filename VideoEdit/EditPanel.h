@@ -16,6 +16,7 @@
 #include <string>
 #include "MoveLabel.h"
 #include "FramePusher.h"
+//#include "PushOpencv.h"
 
 struct ImgSource{//图源
 	std::string url;	//图源路径
@@ -33,6 +34,8 @@ public:
 	~EditPanel();
 
 	void startPusher(FramePusher* pusher);
+	//void startPusher(PushOpencv* pusher);
+
 	void updateAFrame();	//更新一个合成帧
 	static void btn_clicked(Fl_Widget* widget, void* v);	//界面所有按钮的统一回调触发函数
 protected:
@@ -67,4 +70,5 @@ private:
 	void label_do();
 
 	FramePusher* m_framePusher = nullptr;	//帧推送器
+	//PushOpencv* m_pushOpencv = nullptr;
 };
