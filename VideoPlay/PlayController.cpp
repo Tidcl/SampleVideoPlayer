@@ -1,5 +1,6 @@
 #include "PlayController.h"
 #include "VideoDecoder.h"
+#include "VideoEdit/EditDecoder.h"
 
 void PlayController::seek(long timeMS)
 {
@@ -187,6 +188,7 @@ void PlayController::threadWait()
 
 PlayController::PlayController()
 {
+	//m_playDecoder.reset(new EditDecoder());
 	m_playDecoder.reset(new VideoDecoder());
 }
 
@@ -233,7 +235,7 @@ int PlayController::startPlay()
 		m_playStartTime = 0;
 		m_seekTimeMs = 0;
 		//m_playDecoder->videoSeek(m_seekTimeMs);
-		setSeekTime(0);
+		//setSeekTime(0);
 		m_pauseMS = 0;
 
 		m_playStart = std::chrono::high_resolution_clock::now();
@@ -242,7 +244,7 @@ int PlayController::startPlay()
 		{
 			std::this_thread::sleep_for(std::chrono::microseconds(1)); //1us处理1次
 
-			//判断是否进入seek
+			//判断是否进入seek，阻塞解码线程，并让播放线程清理缓冲队列
 			if (m_seekFlag)
 			{
 				//printf("播放线程进入seek逻辑\n");
@@ -252,14 +254,12 @@ int PlayController::startPlay()
 				while (m_isWaited == false)
 				{
 					std::this_thread::sleep_for(std::chrono::microseconds(1));
-					//m_syncMutex.unlock();
 				}
 				//printf("播放线程检测到解码线程上锁\n");
 				seek(m_seekTimeMs);
 				//printf("播放线程seek初始化\n");
 				m_playDecoder->freeBuffer();
 				//printf("播放线程释放缓存\n");
-				m_syncCond.notify_all();
 				m_syncCond.notify_all();
 				m_isWaited = false;
 				//printf("播放线程唤醒解码线程\n");
@@ -333,16 +333,18 @@ void PlayController::stopPlay()
 {
 	if (m_playThread && m_playThread->joinable())
 	{
-		if (m_playDecoder)
-		{
-			m_playDecoder->stopDecode();
-		}
-
 		m_stop = true;
 		printf("wait thread exit...\n");
 		m_playThread->join();
 		printf("play controller thread exit\n");
+		if (m_playDecoder)
+		{
+			m_playDecoder->stopDecode();
+		}
+		
 		delete m_playThread;
 		m_playThread = nullptr;
+
+
 	}
 }

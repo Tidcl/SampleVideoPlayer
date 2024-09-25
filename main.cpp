@@ -21,6 +21,7 @@
 #include "VideoEdit/EditPanel.h"
 #include "VideoEdit/MoveLabel.h"
 #include "VideoEdit/FramePusher.h"
+#include "VideoEdit/EditDecoder.h"
 //#include "VideoEdit/PushOpencv.h"
 //#include "VideoEdit/testOpencv.cpp"
 #include <windows.h>
@@ -50,6 +51,37 @@
 //线程向session里面的rtp连接发送帧
 void sendFrameThread(RTSPServer* server, MediaSessionId sessionId, H264File* file);
 
+void testEditCodecer()
+{
+	EditDecoder eDecoder;
+	//eDecoder.initDecode("C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4");
+	eDecoder.initDecode("C:/Users/xctan/Pictures/gif5.gif");
+	eDecoder.startDecode();
+}
+
+void enableEditor(int argc, char* argv[])
+{
+	static FramePusher pusher;
+	pusher.openCodec();
+
+	Fl_Window fw1(0, 0, 800, 600);
+	EditPanel ep(0, 0, 800, 600, "editPanelInstance");
+	ep.startPusher(&pusher);
+	fw1.end();
+	fw1.show(argc, argv);
+
+	Fl::run();
+}
+
+void enablePlayer(int argc, char* argv[])
+{
+	Fl_Window fw(0, 0, 800, 600);
+	PlayWidget form(0, 0, 800, 600, "");
+	fw.show(argc, argv);
+
+	Fl::run();
+}
+
 int main(int argc, char *argv[]) {
 		
 	timeBeginPeriod(1);		//初始化计时分辨率
@@ -68,11 +100,12 @@ int main(int argc, char *argv[]) {
 	//std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();	//创建事件循环对象
 	////std::shared_ptr<HttpServer> ts = std::make_shared<HttpServer>(spoller);
 	////ts->listen(spoller, 8890);
+	// 
 	////std::shared_ptr<WebSocketServer> tws = std::make_shared<WebSocketServer>(spoller);
 	////tws->listen(spoller, 8891);
+	// 
 	//std::shared_ptr<RTSPServer> rtsps = std::make_shared<RTSPServer>(spoller);	//创建服务器对象
 	//rtsps->listen(554);	//设置监听端口
-
 	//RTSPSession* session = new RTSPSession();	
 	//session->addSource(channel_0, H264Source::CreateNew());
 	//MediaSessionId session_id = rtsps->AddSession(session);
@@ -99,21 +132,14 @@ int main(int argc, char *argv[]) {
 	//});
 
 
-
-
-	//FramePusher pusher;
-	//pusher.openCodec();
-
 	Fl_Window fw(0, 0, 800, 600);
 	PlayWidget form(0, 0, 800, 600, "");
 	fw.show(argc, argv);
 
+
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-	//Fl_Window fw1(0, 0, 500, 320);
-	//EditPanel ep(0, 0, 500, 320, "editPanelInstance");
-	//ep.startPusher(&pusher);
-	//fw1.end();
-	//fw1.show(argc, argv);
+	Fl_Window mainW(0,0,80,80);
+	mainW.show(argc, argv);
 	int lrtn = Fl::run();
 	//stopThread = true;
 	//co_sched.Stop();
