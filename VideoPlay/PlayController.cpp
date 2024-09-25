@@ -1,5 +1,5 @@
 #include "PlayController.h"
-#include "PlayDecoder.h"
+#include "VideoDecoder.h"
 
 void PlayController::seek(long timeMS)
 {
@@ -180,12 +180,14 @@ end:
 
 void PlayController::threadWait()
 {
-	m_syncCond.wait(std::unique_lock<std::mutex>(m_syncMutex));
+	std::unique_lock<std::mutex> lock(m_syncMutex);
+	m_isWaited = true;
+	m_syncCond.wait(lock);
 }
 
 PlayController::PlayController()
 {
-	m_playDecoder.reset(new PlayDecoder());
+	m_playDecoder.reset(new VideoDecoder());
 }
 
 PlayController::~PlayController()
@@ -238,7 +240,6 @@ int PlayController::startPlay()
 		int initCount = 0;
 		while (!m_stop)
 		{
-			//if (m_playDecoder->isFree()) break;	//如果解码器线程已经退出
 			std::this_thread::sleep_for(std::chrono::microseconds(1)); //1us处理1次
 
 			//判断是否进入seek
@@ -248,14 +249,19 @@ int PlayController::startPlay()
 				m_playDecoder->videoSeek(m_seekTimeMs);
 				//printf("播放线程设置解码线程seek\n");
 				//printf("播放线程尝试等待解码线程上锁\n");
-				while (m_syncMutex.try_lock())
-					m_syncMutex.unlock();
+				while (m_isWaited == false)
+				{
+					std::this_thread::sleep_for(std::chrono::microseconds(1));
+					//m_syncMutex.unlock();
+				}
 				//printf("播放线程检测到解码线程上锁\n");
 				seek(m_seekTimeMs);
 				//printf("播放线程seek初始化\n");
 				m_playDecoder->freeBuffer();
 				//printf("播放线程释放缓存\n");
 				m_syncCond.notify_all();
+				m_syncCond.notify_all();
+				m_isWaited = false;
 				//printf("播放线程唤醒解码线程\n");
 				m_seekFlag = false;
 				continue;
@@ -278,7 +284,7 @@ int PlayController::startPlay()
 			//*********************************************************
 
 			initCount = 0;
-			//等待解码器
+			//等待解码器将解码出的frame放入队列
 			while (m_playDecoder->videoFrameVector().empty() && m_seekFlag == false)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -295,9 +301,9 @@ int PlayController::startPlay()
 			{
 				AVFrame* vFrame = m_playDecoder->videoFrameVector().front();
 				//判断时间戳，是否缓存帧已经可以播放
-				if (m_playTime >= vFrame->pts * m_playDecoder->videoTimeBase())
+				if (m_playTime >= vFrame->pts * m_playDecoder->videoTimeBaseMs())
 				{
-					double frameMs = vFrame->pts * m_playDecoder->videoTimeBase();
+					double frameMs = vFrame->pts * m_playDecoder->videoTimeBaseMs();
 					if (m_func && !m_stop) 
 						m_func(vFrame, m_v, (int)frameMs);
 

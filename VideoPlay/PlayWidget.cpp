@@ -85,6 +85,7 @@ PlayWidget::PlayWidget(int x, int y, int w, int h, char* str)
 {
 	//界面位置
 	m_input = new Fl_Input(x, 5, w, 20, "");
+	m_input->value("../../Resource/SampleVideo_1280x720_10mb.mp4");
 	m_btn = new Fl_Button(x + 30, this->y() + 30, (int)(w * 0.4), 20, "播放");
 	m_pauseBtn = new Fl_Button(x + 30 + (int)(w*0.5), this->y() + 30, (int)(w*0.4), 20, "暂停");
 	m_label = new Fl_Box(x, m_btn->y() + m_btn->h() + 10, w, w/16*9, "");

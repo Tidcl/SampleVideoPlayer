@@ -101,19 +101,19 @@ int main(int argc, char *argv[]) {
 
 
 
-	FramePusher pusher;
-	pusher.openCodec();
+	//FramePusher pusher;
+	//pusher.openCodec();
 
 	Fl_Window fw(0, 0, 800, 600);
 	PlayWidget form(0, 0, 800, 600, "");
 	fw.show(argc, argv);
 
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-	Fl_Window fw1(0, 0, 500, 320);
-	EditPanel ep(0, 0, 500, 320, "editPanelInstance");
-	ep.startPusher(&pusher);
-	fw1.end();
-	fw1.show(argc, argv);
+	//Fl_Window fw1(0, 0, 500, 320);
+	//EditPanel ep(0, 0, 500, 320, "editPanelInstance");
+	//ep.startPusher(&pusher);
+	//fw1.end();
+	//fw1.show(argc, argv);
 	int lrtn = Fl::run();
 	//stopThread = true;
 	//co_sched.Stop();

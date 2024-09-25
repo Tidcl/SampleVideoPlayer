@@ -37,9 +37,10 @@ include_directories("./net/")
 include_directories("./net/Http/")
 include_directories("./net/WebSocket/")
 include_directories("./net/RTSP/")
-
+include_directories("./")
 
 file(GLOB PlaySrc "./VideoPlay/*.cpp")
+file(GLOB EditSrc "./VideoEdit/*.cpp")
 file(GLOB NetSrc "./net/*.cpp" "./net/Http/*.cpp" "./net/WebSocket/*.cpp" "./net/RTSP/*.cpp")
 #file(GLOB HttpSrc "./net/Http/*.cpp")
 #file(GLOB WebSocketSrc "./net/WebSocket/*.cpp")
@@ -54,9 +55,7 @@ message(".......................................................................
 
 
 
-add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc} 
-"VideoEdit/EditPanel.h" "VideoEdit/EditPanel.cpp" "VideoEdit/MoveLabel.h" "VideoEdit/MoveLabel.cpp" 
-"VideoEdit/FramePusher.h" "VideoEdit/FramePusher.cpp" )
+add_executable(VideoEditor main.cpp ${PlaySrc} ${NetSrc} ${EditSrc})
 
 #set_target_properties(VideoEditor PROPERTIES
 #    RUNTIME_OUTPUT_DIRECTORY C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/bin

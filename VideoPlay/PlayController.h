@@ -23,7 +23,7 @@ extern "C"
 #include <condition_variable>
 #include <mutex>
 #include <memory>
-//#include "PlayDecoder.h"
+//#include "VideoDecoder.h"
 
 #define Frame AVFrame
 
@@ -35,7 +35,7 @@ enum PlayStatus {
 	pause
 };
 
-class PlayDecoder;
+class VideoDecoder;
 
 class PlayController : public std::enable_shared_from_this<PlayController>
 {
@@ -108,14 +108,15 @@ private:
     double m_pauseMS = 0;
     double m_totalDuration = 0;
 
-    std::shared_ptr<PlayDecoder> m_playDecoder;   //解码器。用于获取显示用的视频帧和音频帧
+    std::shared_ptr<VideoDecoder> m_playDecoder;   //解码器。用于获取显示用的视频帧和音频帧
     std::chrono::time_point<std::chrono::steady_clock> m_playStart; //开始播放的时间戳
     long m_seekTimeMs = 0;  //播放偏移时间戳
 
-    friend class PlayDecoder;
+    friend class VideoDecoder;
 
     //做同步控制
     std::mutex m_syncMutex;
+    bool m_isWaited = false;
     std::condition_variable m_syncCond;
     bool m_seekFlag = false;
     //long m_seekTime;

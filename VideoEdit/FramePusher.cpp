@@ -186,8 +186,6 @@ void FramePusher::resizeSws(cv::Mat& img)
 
 void FramePusher::startPush()
 {
-	if (m_fmt_ctx.get() == nullptr) return;	//表示没有打开编码器
-
 	stopPush();
 	std::thread* t = new std::thread(std::bind(&FramePusher::pushing, this));
 	m_pullThread.reset(t);
