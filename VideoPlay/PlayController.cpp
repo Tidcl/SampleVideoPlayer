@@ -309,6 +309,7 @@ int PlayController::startPlay()
 
 					if (vFrame && !m_stop)
 					{
+						//std::cout << "play one frame tine = " << m_playTime << std::endl;	
 						av_frame_free(&vFrame);
 						if (m_playDecoder->videoFrameVector().size() > 0)
 							m_playDecoder->videoFrameVector().pop_front();

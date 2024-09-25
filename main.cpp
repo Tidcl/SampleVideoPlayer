@@ -136,6 +136,10 @@ int main(int argc, char *argv[]) {
 	PlayWidget form(0, 0, 800, 600, "");
 	fw.show(argc, argv);
 
+	//EditDecoder eDecoder;
+	//eDecoder.initDecode("C:/Users/xctan/Pictures/gif5.gif");
+	//eDecoder.startDecode();
+
 
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
 	Fl_Window mainW(0,0,80,80);

@@ -70,7 +70,7 @@ protected:
 	std::deque<AVFrame*> m_audioFrameVec;//音频帧队列
 
 	long m_bufferTime = 0;//缓存多少ms的帧
-	long m_bufFrameCount = 50;	//缓存多少个帧
+	long m_bufFrameCount = 300;	//缓存多少个帧
 
 	std::mutex m_mutex;	//队列同步锁
 	bool m_seekFlag = false;	//seek标志，如果为true表示进入seek状态
