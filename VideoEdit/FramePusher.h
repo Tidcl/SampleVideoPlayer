@@ -11,6 +11,7 @@ extern "C" {
 #include <memory>
 #include <opencv2/opencv.hpp>
 
+//ึกอฦหอฦ๗
 class FramePusher {
 public:
 	FramePusher();

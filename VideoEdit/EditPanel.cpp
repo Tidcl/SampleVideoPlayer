@@ -83,14 +83,8 @@ void EditPanel::startPusher(FramePusher* pusher)
 {
 	m_framePusher = pusher;
 	updateAFrame();
-	//if (m_framePusher->initFFmpeg() == 0)
-		m_framePusher->startPush();
+	m_framePusher->startPush();
 }
-
-//void EditPanel::startPusher(PushOpencv* pusher)
-//{
-//	m_pushOpencv = pusher;
-//}
 
 void EditPanel::updateAFrame()
 {
@@ -120,7 +114,7 @@ void EditPanel::updateAFrame()
 	cv::cvtColor(bufferFrame, rgbImgMat, cv::COLOR_BGR2RGB);
 	m_showcvMat = rgbImgMat;	//显示合成帧存到成员变量
 
-	if (m_showFrame) delete m_showFrame;
+	if (m_showFrame) delete m_showFrame;	//用于显示的Fl_RGB_Image
 	m_showFrame = new Fl_RGB_Image(rgbImgMat.data,	//该数据很可能随着rgbImgMat的生命周期变成悬挂指针
 		rgbImgMat.cols,
 		rgbImgMat.rows,
@@ -129,7 +123,6 @@ void EditPanel::updateAFrame()
 
 	m_frameShow->image(m_showFrame);
 	if(m_framePusher) m_framePusher->updateFrame(bufferFrame);
-	//if (m_pushOpencv) m_pushOpencv->push_frame(bufferFrame);
 
 	redraw();
 }
@@ -168,7 +161,7 @@ void EditPanel::btn_clicked(Fl_Widget* widget, void* v)
 	}
 	else if (widget == (Fl_Button*)ep->m_moveLabel)
 	{
-		ep->label_do();
+		ep->moveLabel_do();
 	}
 }
 
@@ -285,7 +278,7 @@ void EditPanel::popmenu_do()
 	resetMoveLabel(m_layChoice->value());
 }
 
-void EditPanel::label_do()
+void EditPanel::moveLabel_do()
 {
 	//std::cout << "move done" << std::endl;
 	int index = m_layChoice->value();
