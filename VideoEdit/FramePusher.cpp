@@ -17,9 +17,12 @@ void FramePusher::updateFrame(cv::Mat mat)
 	m_updateFlag = true;
 }
 
-int FramePusher::openCodec()
+int FramePusher::openCodec(int width, int height, int fps)
 {
-	//::CoUninitialize();
+	m_width = width;
+	m_height = height;
+	m_frameRate = fps;
+
 	// 输出格式设置为RTMP推流
 	AVFormatContext* fmt_ctx = nullptr;
 	avformat_alloc_output_context2(&fmt_ctx, nullptr, "flv", m_serverPath.c_str());
@@ -30,7 +33,6 @@ int FramePusher::openCodec()
 
 	// 设置编码器
 	const AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-	//const AVCodec* codec = avcodec_find_encoder_by_name("libx264");
 	if (!codec) {
 		std::cerr << "找不到H264编码器" << std::endl;
 		return -1;
@@ -52,7 +54,6 @@ int FramePusher::openCodec()
 	codec_ctx->framerate = AVRational{ m_frameRate * ration, 1 * ration };
 	codec_ctx->gop_size = 1;
 	codec_ctx->max_b_frames = 0;
-	//codec_ctx->bit_rate = m_width * m_height * 8 * 3;
 
 	if (fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
 		codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -67,12 +68,8 @@ int FramePusher::openCodec()
 		return -1;
 	}
 
-	m_fmt_ctx.reset(fmt_ctx, [](AVFormatContext* ptr) {
-		avformat_free_context(ptr);
-		});
-	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) {
-		avcodec_free_context(&ptr);
-		});
+	m_fmt_ctx.reset(fmt_ctx, [](AVFormatContext* ptr) { avformat_free_context(ptr); });
+	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) { avcodec_free_context(&ptr); });
 
 	av_dump_format(fmt_ctx, 0, m_serverPath.c_str(), 1);
 	return 0;
@@ -89,7 +86,6 @@ int FramePusher::pushing()
 		std::cerr << "无法创建视频流" << std::endl;
 		return -1;
 	}
-	//stream->time_base = codec_ctx->time_base;
 
 	avcodec_parameters_from_context(stream->codecpar, codec_ctx);
 
@@ -107,14 +103,7 @@ int FramePusher::pushing()
 		return -1;
 	}
 
-	//stream->time_base = codec_ctx->time_base;
 	// 初始化图像转换上下文
-	SwsContext* sws_ctx = sws_getContext(
-		codec_ctx->width, codec_ctx->height, AV_PIX_FMT_BGR24,
-		codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
-		SWS_BILINEAR, nullptr, nullptr, nullptr);
-	std::shared_ptr<SwsContext> sws_ctx_t(sws_ctx, [](SwsContext* ptr) {sws_freeContext(ptr); });
-
 	AVFrame* frame = av_frame_alloc();
 	std::shared_ptr<AVFrame> frame_t(frame, [](AVFrame* ptr) {av_frame_free(&ptr); });
 	frame->format = codec_ctx->pix_fmt;
@@ -134,38 +123,30 @@ int FramePusher::pushing()
 	while (!m_stopPullFlag) {
 		auto start = std::chrono::high_resolution_clock::now();
 
-
 		if (m_updateFlag)
 		{
 			img = m_updateMat;
 			m_updateFlag = false;
 		}
-		img = m_updateMat;
 
 		if (img.empty()) continue;
+		
+		resizeSws(img); // 重置sws的转换分辨率,将img转为配置的成员宽高
+		
 		// 将BGR24转换为YUV420P
 		uint8_t* inData[1] = { img.data };
 		int inLinesize[1] = { static_cast<int>(img.step) };
-		sws_scale(sws_ctx, inData, inLinesize, 0, codec_ctx->height, frame->data, frame->linesize);
-		frame->pts = frame_index++;//frame->pkt_dts = frame->pts;
-		// 设置帧的 PTS
-		//frame->pts = av_rescale_q(frame->pts, stream->time_base, codec_ctx->time_base);
-
-		//std::cout << "发送给编码器时 pts=" << frame->pts << " dts=" << frame->pkt_dts << std::endl;
+		sws_scale(m_sws_ctx.get(), inData, inLinesize, 0, img.rows, frame->data, frame->linesize);
+		frame->pts = frame_index++;	// 设置帧的 PTS
+		
 		if (avcodec_send_frame(codec_ctx, frame) < 0) {
 			std::cerr << "无法发送帧到编码器" << std::endl;
 		}
-
 		while (avcodec_receive_packet(codec_ctx, &pkt) == 0) {
-			
-			//std::cout << "刚从编码器接收到的包 pts=" << pkt.pts << " dts=" << pkt.dts << " time=" << pkt.pts * (1.0/m_frameRate) << "s" << std::endl;
-			//av_packet_rescale_ts(&pkt, codec_ctx->time_base, stream->time_base);
-
 			pkt.stream_index = stream->index;
 			pkt.pts = av_rescale_q(pkt.pts, codec_ctx->time_base, stream->time_base);
 			pkt.dts = av_rescale_q(pkt.dts, codec_ctx->time_base, stream->time_base);
 			pkt.duration = av_rescale_q(pkt.duration, codec_ctx->time_base, stream->time_base);
-			//pkt.duration = 0;
 			pkt.pos = -1;
 
 			if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0) {
@@ -175,20 +156,33 @@ int FramePusher::pushing()
 			av_packet_unref(&pkt);
 		}
 
+
 		auto durationUs = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count();
-		int microTime = (1000000 / m_frameRate) - durationUs;
-		//std::cout << "sleep " << microTime * 0.001 << "ms" << std::endl;
-		//std::this_thread::sleep_for(std::chrono::microseconds(microTime / (m_frameRate * 8)));
+		int microTime = (1000000 / m_frameRate) - durationUs;	//得到执行玩一次循环后还需要休眠多长时间
 		std::this_thread::sleep_for(std::chrono::microseconds(microTime));
-
-		//std::cout << "loop time " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << "ms" << std::endl;
 	}
-
-	// 写文件尾
-	av_write_trailer(fmt_ctx);
+	
+	av_write_trailer(fmt_ctx);	// 写文件尾
 }
 
 
+
+void FramePusher::resizeSws(cv::Mat& img)
+{
+	static int sws_width = 0;
+	static int sws_height = 0;
+
+	if (img.cols != sws_width || img.rows != sws_height)
+	{
+		sws_width = img.cols;
+		sws_height = img.rows;
+		SwsContext* new_sws_ctx = sws_getContext(
+			sws_width, sws_height, AV_PIX_FMT_BGR24,
+			m_codec_ctx->width, m_codec_ctx->height, m_codec_ctx->pix_fmt,
+			SWS_BILINEAR, nullptr, nullptr, nullptr);
+		m_sws_ctx.reset(new_sws_ctx, [](SwsContext* ptr) {sws_freeContext(ptr); });
+	}
+}
 
 void FramePusher::startPush()
 {

@@ -8,6 +8,7 @@ link_directories(../develep/fltk-1.3.9/build/lib/Debug)
 
 #ffmpeg
 include_directories(../develep/ffmpeg-7.0.1/build-release/include)
+#include_directories(../develep/ffmpeg-7.0.1)
 link_directories(../develep/ffmpeg-7.0.1/build-release/bin)
 
 #zlib
