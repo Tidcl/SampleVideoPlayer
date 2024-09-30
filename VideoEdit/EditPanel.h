@@ -15,14 +15,43 @@
 #include <string>
 #include "MoveLabel.h"
 #include "FramePusher.h"
+#include "VideoPlay/PlayController.h"
+#include "VideoPlay/VideoTimer.h"
+#include "EditDecoder.h"
 
-struct ImgSource{	//图源
-	std::string url;//图源路径
-	cv::Mat imgMat;	//图源矩阵，合成时使用
-	int width = 0;	//长
-	int height = 0;	//宽
-	int x = 0;		//x位置
-	int y = 0;		//y位置
+enum SourceType {
+	Picture = 0,
+	Gif,
+	Video
+};
+
+class ImgSource{	//图源
+public:
+	ImgSource();
+	~ImgSource();
+
+	cv::Mat& getMat();
+
+	cv::Mat& getPointTimeMat(double time);
+
+	void initSource();
+
+	std::string m_url;//图源路径
+	cv::Mat m_imgMat;	//图源矩阵，合成时使用
+	int m_width = 0;	//长
+	int m_height = 0;	//宽
+	int m_x = 0;		//x位置
+	int m_y = 0;		//y位置
+	int m_fps = 0;	
+
+	double m_startPlayTime;	//开始播放时间
+	double m_pauseTime;	//暂停的时间
+
+	SourceType m_type;
+	bool m_pauseFlag = false;
+	cv::Mat m_lastVideoMat;
+	//来自Decoder的帧
+	std::shared_ptr<EditDecoder> m_decoder = nullptr;
 };
 
 class EditPanel : public Fl_Group {
@@ -30,13 +59,15 @@ public:
 	EditPanel(int x, int y, int w, int h, const char* str);
 	~EditPanel();
 
+	void updateViewLabel();
 	void startPusher(FramePusher* pusher);
 	void updateAFrame();					//更新一个合成帧
 	static void btn_clicked(Fl_Widget* widget, void* v);	//界面所有按钮的统一回调触发函数
 protected:
-	void addImgSource(ImgSource imgSource);
+	void addImgSource(std::shared_ptr<ImgSource> imgSource);
 	void removeSource(int index);
 	void resetMoveLabel(int index);
+	void composeFrame();
 private:
 	Fl_Box* m_frameShow = nullptr;			//帧画板
 	//操作图源在画板的位置
@@ -63,5 +94,11 @@ private:
 	void moveLabel_do();
 private:
 	FramePusher* m_framePusher = nullptr;	//帧推送器
-	std::vector<ImgSource> m_imgSourceVec;	//图源列表
+	std::vector<std::shared_ptr<ImgSource>> m_imgSourceVec;	//图源列表
+
+	VideoTimer m_composeTimer;
+
+	cv::Mat m_bufferFrame;
+
+	double m_fps = 30;
 };

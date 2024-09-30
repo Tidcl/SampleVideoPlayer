@@ -1,10 +1,10 @@
 #include <FL/Fl_File_Chooser.H>
 #include "EditPanel.h"
-
+#include <opencv2/opencv.hpp>
 EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	:Fl_Group(x,y,w,h, str)
 {
-	m_frameShow = new Fl_Box(100, 10, w - 100, h - 50);	//400 270
+	m_frameShow = new Fl_Box(100, 10, w - 100, h - 50);	
 
 	int contolerYOffset = 10;
 	m_up = new Fl_Button(30, 0 + contolerYOffset, 30, 20, "up");
@@ -28,37 +28,91 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	m_layChoice->callback(&EditPanel::btn_clicked, this);
 	m_moveLabel->callback(&EditPanel::btn_clicked, this);
 
+	//m_bufferFrame = cv::Mat::zeros(cv::Size(m_frameShow->w(), m_frameShow->h()), CV_8UC3);
+
 	m_imgSourceVec;
-	ImgSource imgSource1;
-	imgSource1.url = "C:/Users/xctan/Pictures/2.jpg";
-	imgSource1.imgMat = cv::imread(imgSource1.url, cv::IMREAD_COLOR);
-	imgSource1.x = 0;
-	imgSource1.y = 0;
-	imgSource1.width = m_frameShow->w();
-	imgSource1.height = m_frameShow->h();
-	ImgSource imgSource2;
-	imgSource2.url = "C:/Users/xctan/Pictures/4.jpg";
-	imgSource2.imgMat = cv::imread(imgSource2.url, cv::IMREAD_COLOR);
-	imgSource2.x = 150;
-	imgSource2.y = 0;
-	imgSource2.width = 50;
-	imgSource2.height = 50;
-	ImgSource imgSource3;
-	imgSource3.url = "C:/Users/xctan/Pictures/5.jpg";
-	imgSource3.imgMat = cv::imread(imgSource3.url, cv::IMREAD_COLOR);
-	imgSource3.x = 0;
-	imgSource3.y = 0;
-	imgSource3.width = 150;
-	imgSource3.height = 50;
+	std::shared_ptr<ImgSource> imgSource1 = std::make_shared<ImgSource>();
+	imgSource1->m_url = "C:/Users/xctan/Pictures/2.jpg";
+	imgSource1->m_type = SourceType::Picture;
+	imgSource1->m_x = 0;
+	imgSource1->m_y = 0;
+	imgSource1->m_width = m_frameShow->w();
+	imgSource1->m_height = m_frameShow->h();
+	imgSource1->initSource();
+
+	std::shared_ptr<ImgSource>  imgSource2 = std::make_shared<ImgSource>();
+	imgSource2->m_url = "C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4";	//C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4 C:/Users/xctan/Pictures/gif5.gif
+	imgSource2->m_type = SourceType::Video;
+	imgSource2->m_imgMat = cv::imread(imgSource2->m_url, cv::IMREAD_COLOR);
+	imgSource2->m_pauseFlag = false;
+	imgSource2->m_x = 250;
+	imgSource2->m_y = 0;
+	imgSource2->m_width = 160 * 3;
+	imgSource2->m_height = 90 * 3;
+	imgSource2->initSource();
+
+	std::shared_ptr<ImgSource>  imgSource3 = std::make_shared<ImgSource>();
+	imgSource3->m_url = "C:/Users/xctan/Pictures/gif5.gif";	//C:/Users/xctan/Pictures/5.jpg
+	imgSource3->m_type = SourceType::Gif;
+	imgSource3->m_x = 0;
+	imgSource3->m_y = 0;
+	imgSource3->m_width = 200;
+	imgSource3->m_height = 200;
+	imgSource3->initSource();
+
 	addImgSource(imgSource1);
 	addImgSource(imgSource2);
 	addImgSource(imgSource3);
-
-	updateAFrame();
+	
+	m_composeTimer.setInterval(1);
+	m_composeTimer.setCallbackFun([](void* val) {
+		EditPanel* ep = (EditPanel*)val;
+		ep->composeFrame();
+		//从帧队列中取出
+	}, this);
+	m_composeTimer.start();
 }
+
+void EditPanel::composeFrame()
+{
+	auto startTime_t = std::chrono::high_resolution_clock::now();
+	static double frameTime = 1000 / m_fps;
+	static double m_playFrameMS = 0;
+	static int bufferMaxCount = 10;
+	static double frameIndex = 0;
+
+	int nowTime = m_composeTimer.timeMS();
+
+	if (m_framePusher && m_framePusher->bufferCount() >= 30)
+	{
+		return;
+	}
+
+	cv::Mat bufferFrame(m_frameShow->h(), m_frameShow->w(), CV_8UC3);
+	//遍历图源合成到合成帧中
+	for (auto imgSour : m_imgSourceVec)
+	{
+		cv::Mat& mat = imgSour->getPointTimeMat(m_playFrameMS);
+
+		//将图源重新缩放
+		if (mat.rows == 0)
+			continue;
+		//如果焦点区域超出就需要裁剪原图
+		mat.copyTo(bufferFrame(cv::Rect(imgSour->m_x, imgSour->m_y, imgSour->m_width, imgSour->m_height)));
+	}
+	
+	m_playFrameMS += frameTime;
+	frameIndex++;
+	if (m_framePusher)
+	{
+		m_framePusher->pushFrame(bufferFrame);
+	}
+}
+
 
 EditPanel::~EditPanel()
 {
+	m_composeTimer.stop();
 	delete m_frameShow;
 	m_frameShow = nullptr;
 
@@ -79,41 +133,46 @@ EditPanel::~EditPanel()
 	m_delLay = nullptr;
 }
 
+void EditPanel::updateViewLabel()
+{
+	m_frameShow->image(m_showFrame);
+	this->redraw();
+}
+
 void EditPanel::startPusher(FramePusher* pusher)
 {
+	pusher->startPush();
 	m_framePusher = pusher;
-	updateAFrame();
-	m_framePusher->startPush();
+	//updateAFrame();
 }
 
 void EditPanel::updateAFrame()
 {
-	//创建合成帧缓冲
-	cv::Mat bufferFrame = cv::Mat::zeros(cv::Size(m_frameShow->w(), m_frameShow->h()), CV_8UC3);
-	bufferFrame.setTo(cv::Scalar(255, 255, 255));
-
-	//便利图源合成到合成帧中
+	//遍历图源合成到合成帧中
 	cv::Mat resizeImgMat;
-	for (ImgSource& imgSour : m_imgSourceVec) 
+	auto startTime = std::chrono::high_resolution_clock::now();
+	
+	for (auto imgSour : m_imgSourceVec) 
 	{
-		int x = imgSour.x;
-		int y = imgSour.y;
-		int width = imgSour.width;
-		int height = imgSour.height;
+		int x = imgSour->m_x;
+		int y = imgSour->m_y;
+		int width = imgSour->m_width;
+		int height = imgSour->m_height;
 
-		//该逻辑需要扩展，用以支持当长宽超出画板的图片截取
 
 		//将图源重新缩放
-		cv::resize(imgSour.imgMat, resizeImgMat, cv::Size(width, height));
+		cv::Mat& mat = imgSour->getMat();
+		if(mat.rows == 0) continue;
 		//如果焦点区域超出就需要裁剪原图
-		resizeImgMat.copyTo(bufferFrame(cv::Rect(x, y, width, height)));
+		mat.copyTo(m_bufferFrame(cv::Rect(x, y, width, height)));
 	}
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
 
 	//合成帧更新到界面
 	cv::Mat rgbImgMat;
-	cv::cvtColor(bufferFrame, rgbImgMat, cv::COLOR_BGR2RGB);
-	m_showcvMat = rgbImgMat;	//显示合成帧存到成员变量
-
+	cv::cvtColor(m_bufferFrame, rgbImgMat, cv::COLOR_BGR2RGB);
+	//m_showcvMat = rgbImgMat;	//显示合成帧存到成员变量
 	if (m_showFrame) delete m_showFrame;	//用于显示的Fl_RGB_Image
 	m_showFrame = new Fl_RGB_Image(rgbImgMat.data,	//该数据很可能随着rgbImgMat的生命周期变成悬挂指针
 		rgbImgMat.cols,
@@ -121,10 +180,18 @@ void EditPanel::updateAFrame()
 		3,
 		rgbImgMat.step);
 
-	m_frameShow->image(m_showFrame);
-	if(m_framePusher) m_framePusher->updateFrame(bufferFrame);
+	//cv::imshow("Image Window", m_bufferFrame);
 
-	redraw();
+	//m_frameShow->image(m_showFrame);
+	//if(m_framePusher) m_framePusher->updateFrame(m_bufferFrame);
+
+	//提交主线程刷新（会崩溃）
+	//Fl::awake([](void* val) {
+	//	EditPanel* ep = (EditPanel*)val;
+	//	ep->updateViewLabel();
+	//}, this);//此处直接设计一个函数，参数也指定传入label和image深拷贝
+	//Fl::check();
+	//redraw();
 }
 
 void EditPanel::btn_clicked(Fl_Widget* widget, void* v)
@@ -165,7 +232,7 @@ void EditPanel::btn_clicked(Fl_Widget* widget, void* v)
 	}
 }
 
-void EditPanel::addImgSource(ImgSource imgSource)
+void EditPanel::addImgSource(std::shared_ptr<ImgSource> imgSource)
 {
 	m_imgSourceVec.push_back(imgSource); 
 	char intStr[8] = {0};
@@ -182,6 +249,9 @@ void EditPanel::removeSource(int index)
 	if (index == -1) return;
 
 	m_layChoice->clear();
+	auto ptr = (*(m_imgSourceVec.begin() + index))->m_decoder;
+	if (ptr) { ptr->stopDecode(); }
+	
 	m_imgSourceVec.erase(m_imgSourceVec.begin() + index);
 	char intStr[8] = {0};
 	for (size_t i = 0; i < m_imgSourceVec.size(); i++)
@@ -196,19 +266,21 @@ void EditPanel::removeSource(int index)
 void EditPanel::resetMoveLabel(int index)
 {
 	if (index == -1) return;
-	auto& imgSource = m_imgSourceVec.begin() + index;
-	m_moveLabel->resize(m_frameShow->x() + imgSource->x, m_frameShow->y() + imgSource->y, imgSource->width, imgSource->height);
+	auto imgSource = m_imgSourceVec.begin() + index;
+	m_moveLabel->resize(m_frameShow->x() + (*imgSource)->m_x, m_frameShow->y() + (*imgSource)->m_y, (*imgSource)->m_width, (*imgSource)->m_height);
 	//m_moveLabel->position(m_frameShow->x() + imgSource->x, m_frameShow->y() + imgSource->y);
 	redraw();
 }
+
+
 
 void EditPanel::btn_up_do()
 {
 	auto choiceValue = m_layChoice->value();
 	if (choiceValue == -1) return;
 	auto element = m_imgSourceVec.begin() + choiceValue;
-	int yOffset = element->height - m_frameShow->h();
-	if (yOffset < 0 && (element->y - m_moveOffset) >= 1) element->y -= m_moveOffset;
+	int yOffset = (*element)->m_height - m_frameShow->h();
+	if (yOffset < 0 && ((*element)->m_y - m_moveOffset) >= 1) (*element)->m_y -= m_moveOffset;
 	updateAFrame();
 }
 
@@ -217,8 +289,8 @@ void EditPanel::btn_down_do()
 	auto choiceValue = m_layChoice->value();
 	if (choiceValue == -1) return;
 	auto element = m_imgSourceVec.begin() + choiceValue;
-	int yOffset = element->height - m_frameShow->h();
-	if (yOffset < 0 && (element->y + element->height + m_moveOffset) <= m_frameShow->h()) element->y += m_moveOffset;
+	int yOffset = (*element)->m_height - m_frameShow->h();
+	if (yOffset < 0 && ((*element)->m_y + (*element)->m_height + m_moveOffset) <= m_frameShow->h()) (*element)->m_y += m_moveOffset;
 	updateAFrame();
 }
 
@@ -227,8 +299,8 @@ void EditPanel::btn_left_do()
 	auto choiceValue = m_layChoice->value();
 	if (choiceValue == -1) return;
 	auto element = m_imgSourceVec.begin() + choiceValue;
-	int xOffset = element->width - m_frameShow->w();
-	if(xOffset < 0 && (element->x - m_moveOffset) >= 1) element->x -= m_moveOffset;
+	int xOffset = (*element)->m_width - m_frameShow->w();
+	if(xOffset < 0 && ((*element)->m_x - m_moveOffset) >= 1) (*element)->m_x -= m_moveOffset;
 	updateAFrame();
 }
 
@@ -237,8 +309,8 @@ void EditPanel::btn_right_do()
 	auto choiceValue = m_layChoice->value();
 	if (choiceValue == -1) return;
 	auto element = m_imgSourceVec.begin() + choiceValue;
-	int xOffset = element->width - m_frameShow->w();
-	if (xOffset < 0 && (element->x + element->width + m_moveOffset) <= m_frameShow->w()) element->x += m_moveOffset;
+	int xOffset = (*element)->m_width - m_frameShow->w();
+	if (xOffset < 0 && ((*element)->m_x + (*element)->m_width + m_moveOffset) <= m_frameShow->w()) (*element)->m_x += m_moveOffset;
 	updateAFrame();
 }
 
@@ -251,14 +323,14 @@ void EditPanel::btn_addLay_do()
 
 		//ImgSource* is = (ImgSource*)source;
 		EditPanel* ep = (EditPanel*)source;
-		ImgSource imgSource1;
-		imgSource1.url = fChoice->value(0);
-		imgSource1.imgMat = cv::imread(imgSource1.url, cv::IMREAD_COLOR);
-		if (imgSource1.imgMat.rows == 0 || imgSource1.imgMat.cols == 0) return;
-		imgSource1.x = 0;
-		imgSource1.y = 0;
-		imgSource1.width = ep->m_frameShow->w();
-		imgSource1.height = ep->m_frameShow->h();
+		std::shared_ptr<ImgSource> imgSource1 = std::make_shared<ImgSource>();
+		imgSource1->m_url = fChoice->value(0);
+		imgSource1->m_imgMat = cv::imread(imgSource1->m_url, cv::IMREAD_COLOR);
+		if (imgSource1->m_imgMat.rows == 0 || imgSource1->m_imgMat.cols == 0) return;
+		imgSource1->m_x = 0;
+		imgSource1->m_y = 0;
+		imgSource1->m_width = ep->m_frameShow->w();
+		imgSource1->m_height = ep->m_frameShow->h();
 		ep->addImgSource(imgSource1);
 		ep->updateAFrame();
 	}, this);
@@ -283,19 +355,124 @@ void EditPanel::moveLabel_do()
 	//std::cout << "move done" << std::endl;
 	int index = m_layChoice->value();
 	if (index == -1) return;
-	auto& imgSource = m_imgSourceVec.begin() + index;
+	auto imgSourcet = m_imgSourceVec.begin() + index;
+	std::shared_ptr<ImgSource> imgSource = *imgSourcet;
 	int offset_x = m_moveLabel->x() - m_frameShow->x();
 	int offset_y = m_moveLabel->y() - m_frameShow->y();
 
-	if (offset_x + imgSource->width > m_frameShow->w()
-		|| offset_y + imgSource->height > m_frameShow->h()
+	if (offset_x + imgSource->m_width > m_frameShow->w()
+		|| offset_y + imgSource->m_height > m_frameShow->h()
 		|| offset_x < 0 || offset_y < 0)
 	{
 		resetMoveLabel(index);
 		return;
 	}
-	imgSource->x = offset_x;
-	imgSource->y = offset_y;
+	imgSource->m_x = offset_x;
+	imgSource->m_y = offset_y;
 
-	updateAFrame();
+	//updateAFrame();
+}
+
+ImgSource::ImgSource()
+{
+}
+
+ImgSource::~ImgSource()
+{
+}
+
+cv::Mat& ImgSource::getMat()
+{
+	switch (m_type)
+	{
+	case Picture:
+		return m_imgMat;
+		break;
+	case Gif:
+	case Video:
+		if (m_pauseFlag)
+		{
+			return m_lastVideoMat;
+		}
+		else
+		{
+			cv::Mat mat = m_decoder->popFrontMat();
+
+			if (mat.rows == 0)
+			{
+				return m_lastVideoMat;
+			}
+			else
+			{
+				m_lastVideoMat = mat;
+			}
+
+			return m_lastVideoMat;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+cv::Mat& ImgSource::getPointTimeMat(double time)
+{
+	switch (m_type)
+	{
+	case Picture:
+		return m_imgMat;
+		break;
+	case Gif:
+	case Video:
+		if (m_pauseFlag)
+		{
+			return m_lastVideoMat;
+		}
+		else
+		{
+			double timeStep = m_decoder->frontTimeStep();
+			while (timeStep < time && timeStep != -1)
+			{
+				cv::Mat mat = m_decoder->popFrontMat();
+				if (mat.rows == 0)
+				{
+					return m_lastVideoMat;
+				}
+				else
+				{
+					std::swap(m_lastVideoMat, mat);
+					timeStep = m_decoder->frontTimeStep();
+				}
+			}
+			return m_lastVideoMat;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void ImgSource::initSource()
+{
+	switch (m_type)
+	{
+	case Picture:
+	{
+		cv::resize(cv::imread(m_url, cv::IMREAD_COLOR), m_imgMat, cv::Size(m_width, m_height));
+	}
+		break;
+	case Gif:
+	case Video:
+	{
+		m_decoder = std::make_shared<EditDecoder>();
+		m_decoder->initDecode(m_url);
+		m_fps = m_decoder->videoFps();
+		m_decoder->m_width = m_width;
+		m_decoder->m_height = m_height;
+		m_decoder->startDecode();
+	}
+		break;
+	default:
+		break;
+	}
 }
