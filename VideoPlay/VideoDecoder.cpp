@@ -8,7 +8,7 @@ VideoDecoder::VideoDecoder()
 
 VideoDecoder::~VideoDecoder()
 {
-
+	stopDecode();
 }
 
 void VideoDecoder::setPlayController(std::shared_ptr<PlayController> controller)
@@ -22,10 +22,8 @@ void VideoDecoder::initDecode(std::string url)
 	freeBuffer();
 
 	const char* video_file = url.c_str();
+	m_url = url;
 
-	// avformat_network_init();
-
-	// av_register_all();
 	if (strlen(video_file) == 0) return;
 
 	//打开文件
@@ -84,6 +82,8 @@ void VideoDecoder::initDecode(std::string url)
 	if (video_stream_index != -1)
 	{
 		video_time_base = m_formatContext->streams[video_stream_index]->time_base;	//视频时间基
+		auto frameRate = m_formatContext->streams[video_stream_index]->avg_frame_rate;
+		video_fps = frameRate.num / frameRate.den;
 		video_codecpar = m_formatContext->streams[video_stream_index]->codecpar;	//视频解码器参数
 		video_codec = const_cast<AVCodec*>(avcodec_find_decoder(video_codecpar->codec_id));	//视频解码器
 		if (!video_codec) {
@@ -113,6 +113,7 @@ void VideoDecoder::initDecode(std::string url)
 
 void VideoDecoder::freeDecode()
 {
+
 	audio_codecpar = nullptr;
 	audio_codec = nullptr;
 	audio_stream_index = -1;
@@ -139,12 +140,12 @@ void VideoDecoder::startDecode()
 
 void VideoDecoder::stopDecode()
 {
+	m_stopDecode = true;
 	if (m_decodeThread && m_decodeThread->joinable())
 	{
-		m_stopDecode = true;
-		std::cout << "wait thread exit..." << std::endl;
+		std::cout << "wait thread exit... " << m_url << std::endl;
 		m_decodeThread->join();
-		printf("decode thread exit successful\n");
+		std::cout << "decode thread exit successful " << m_url << std::endl;
 		delete m_decodeThread;
 		m_decodeThread = nullptr;
 		freeBuffer();
@@ -171,6 +172,31 @@ void VideoDecoder::videoSeek(long timeMs)
 bool VideoDecoder::isFree()
 {
 	return m_formatContext == nullptr?true : false;
+}
+
+int VideoDecoder::videoFps()
+{
+	return video_fps;
+}
+
+int VideoDecoder::videoWidth()
+{
+	return m_formatContext->streams[video_stream_index]->codecpar->width;
+}
+
+int VideoDecoder::videoHeight()
+{
+	return m_formatContext->streams[video_stream_index]->codecpar->height;
+}
+
+cv::Mat VideoDecoder::popFrontMat()
+{
+	if (m_videoFrameVec.empty()) return cv::Mat();
+	auto frontFrame = m_videoFrameVec.front();
+	cv::Mat mat = AVFrameToMat(frontFrame);
+	av_frame_free(&frontFrame);
+	m_videoFrameVec.pop_front();
+	return mat;
 }
 
 void VideoDecoder::freeBuffer()
@@ -214,22 +240,14 @@ void VideoDecoder::decode()
 	}
 	av_init_packet(packet);
 
-	int frame_count = 0;
-	m_stopDecode = false;
-
-	double lastFrameTimeStep = 0;
-	//int read_frame_rtn = 0;
 	while (av_read_frame(m_formatContext, packet) >= 0) {
 
 		if (m_seekFlag)	//如果要求解码器seek寻找
 		{
-			//printf("解码线程进入seek等待状态\n");
 			m_playController->threadWait();		//等待直到播放线程也进入ready状态，当播放线程进入ready状态进行notify。解码线程再去重新解码
 			//当播放线程进入ready会清除缓存队列
-			//printf("解码线程seek等待结束\n");
 			m_seekFlag = false;
 		}
-
 
 		if (m_stopDecode) break;	//要求解码线程退出
 
@@ -237,57 +255,31 @@ void VideoDecoder::decode()
 			if (video_context && avcodec_send_packet(video_context, packet) == 0) {
 				while (avcodec_receive_frame(video_context, bufferFrame) == 0) {	//从解码器中取出解码后的frame
 					if (m_stopDecode) break;
-					//暂停解码
-					//double backTime = bufferFrame->pts * videoTimeBaseMs();//当前帧的时间戳秒
-					//if (backTime > m_playController->playTimeSeconds())
-					//{
-						//复制一帧数据
-						AVFrame* tempFrame = av_frame_alloc();
-						if (tempFrame)
+					//复制一帧数据
+					AVFrame* tempFrame = av_frame_alloc();
+					if (tempFrame)
+					{
+						if (av_frame_ref(tempFrame, bufferFrame) < 0)
 						{
-							if (av_frame_ref(tempFrame, bufferFrame) < 0)
-							{
-								av_frame_free(&tempFrame);
-							}
-								
-							//判断缓存中的帧数据，是否满足播放时间戳+缓冲时间
-							if (m_videoFrameVec.empty())
-							{
-								m_videoFrameVec.push_back(tempFrame);
-								//lastFrameTimeStep = tempFrame->pts * videoTimeBaseMs();
-								//printf("empty push frame time step = %lf\n", backTime);
-							}
-							else
-							{
-								while (m_videoFrameVec.size() > m_bufFrameCount && m_seekFlag == false)
-								{
-									if (m_stopDecode) break;
-									std::this_thread::sleep_for(std::chrono::microseconds(1));
-								}
-
-								if(!m_seekFlag) m_videoFrameVec.push_back(tempFrame);
-
-								//缓冲队列中最后一帧的时间戳
-								//double lastFrameTimeStep = (*(m_videoFrameVec.rbegin()))->pts * videoTimeBaseMs();
-								//while (lastFrameTimeStep > (m_playController->playTimeSeconds() + m_bufferTime))
-								//{
-								//	if (m_stopDecode) break;
-								//	if (m_videoFrameVec.size() == 0 || m_seekFlag)
-								//	{
-								//		lastFrameTimeStep = -1;	//退出等待播放时间戳前进的循环。如果在解码前发现缓存中存在数据，且最后一帧时间戳远大于播放时间+缓存时间，便会进入循环等待播放时间戳前进。如果播放时间偏移是向前偏移，则会出现永远也不会出现当前帧在缓存时间中。
-								//	}
-								//	std::this_thread::sleep_for(std::chrono::microseconds(1));
-								//}
-								////std::unique_lock<std::mutex> guard(m_mutex);
-								////printf("push frame time step = %lf\n", backTime);
-								//if (lastFrameTimeStep != -1 && m_videoFrameVec.size() > 0) { 
-								//	m_videoFrameVec.push_back(tempFrame); 
-								//	lastFrameTimeStep = tempFrame->pts * videoTimeBaseMs();
-								//}
-								//else av_frame_free(&tempFrame);
-							}
+							av_frame_free(&tempFrame);
 						}
-					//}
+								
+						//判断缓存中的帧数据，是否满足播放时间戳+缓冲时间
+						if (m_videoFrameVec.empty())
+						{
+							m_videoFrameVec.push_back(tempFrame);
+						}
+						else
+						{
+							while (m_videoFrameVec.size() > m_bufFrameCount && m_seekFlag == false)
+							{
+								if (m_stopDecode) break;
+								std::this_thread::sleep_for(std::chrono::microseconds(1));
+							}
+
+							if(!m_seekFlag) m_videoFrameVec.push_back(tempFrame);
+						}
+					}
 				}
 			}
 		}
@@ -312,5 +304,21 @@ void VideoDecoder::decode()
 	av_frame_free(&bufferFrame);
 	av_frame_free(&audioBufferFrame);
 	freeDecode();
+}
+
+cv::Mat VideoDecoder::AVFrameToMat(AVFrame* avframe)
+{
+	struct SwsContext* sws_ctx = sws_getContext(
+		avframe->width, avframe->height, static_cast<AVPixelFormat>(avframe->format),
+		avframe->width, avframe->height, AV_PIX_FMT_BGR24,
+		SWS_BILINEAR, NULL, NULL, NULL);
+
+	cv::Mat mat(avframe->width, avframe->height, CV_8UC3);
+	// 执行转换
+	uint8_t* dest[4] = { mat.data, NULL, NULL, NULL };
+	int dest_linesize[4] = { mat.step[0], 0, 0, 0 };
+	sws_scale(sws_ctx, avframe->data, avframe->linesize, 0, avframe->height, dest, dest_linesize);
+	sws_freeContext(sws_ctx);
+	return mat;
 }
 

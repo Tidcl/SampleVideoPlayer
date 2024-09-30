@@ -16,6 +16,7 @@ extern "C"
 #include <chrono>
 #include <thread>
 #include <functional>
+#include <opencv2/opencv.hpp>
 
 class PlayController;
 //用于将解复用器中解码的视频帧和音频帧放入处理队列
@@ -25,7 +26,7 @@ public:
 	friend class PlayController;
 
 	VideoDecoder();
-	~VideoDecoder();
+	virtual ~VideoDecoder();
 
 	void setPlayController(std::shared_ptr<PlayController> controller);
 	void initDecode(std::string url);
@@ -35,17 +36,28 @@ public:
 	void videoSeek(long timeMs); //跳转到指定播放时间位置解码 ms
 	bool isFree();
 
+	int videoFps();
+	int videoWidth();
+	int videoHeight();
+
+	cv::Mat popFrontMat();
+
 	std::deque<AVFrame*>& videoFrameVector() { return m_videoFrameVec; };
 	std::deque<AVFrame*>& audioFrameVector() { return m_audioFrameVec; };
 	void freeBuffer();
 
 	double videoTimeBaseMs() { return (video_time_base.num * 1.0 / video_time_base.den) * 1000; };
 	double audioTimeBaseMs() { return (audio_time_base.num * 1.0 / audio_time_base.den) * 1000; };
+
+
 protected:
 	virtual void decode();
+
+	cv::Mat AVFrameToMat(AVFrame* frame);
 protected:
 	std::thread* m_decodeThread = nullptr;
-	bool m_stopDecode;
+	bool m_stopDecode = false;
+	std::string m_url;
 
 	std::shared_ptr<PlayController> m_playController = nullptr;//
 
@@ -56,6 +68,7 @@ protected:
 	AVCodecContext* video_context = nullptr;
 	AVRational video_time_base;
 	int video_stream_index = -1;
+	int video_fps = -1;
 	//音频解码相关对象
 	AVCodecParameters* audio_codecpar = nullptr;
 	AVCodec* audio_codec = nullptr;
@@ -70,7 +83,7 @@ protected:
 	std::deque<AVFrame*> m_audioFrameVec;//音频帧队列
 
 	long m_bufferTime = 0;//缓存多少ms的帧
-	long m_bufFrameCount = 300;	//缓存多少个帧
+	long m_bufFrameCount = 10;	//缓存多少个帧
 
 	std::mutex m_mutex;	//队列同步锁
 	bool m_seekFlag = false;	//seek标志，如果为true表示进入seek状态
