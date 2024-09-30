@@ -7,7 +7,54 @@ EditDecoder::EditDecoder()
 
 EditDecoder::~EditDecoder()
 {
+	//stopDecode();
+}
 
+void EditDecoder::setStartPlayTime(int time)
+{
+	m_startPlayTime = time;
+}
+
+//cv::Mat& EditDecoder::lastMat()
+//{
+//	return m_lastMat;
+//}
+
+cv::Mat EditDecoder::popFrontMat()
+{
+	if (m_videoFrameVec.empty()) return cv::Mat();
+
+	auto avframe = m_videoFrameVec.front();
+	m_videoFrameVec.pop_front();
+	//cv::Mat mat = AVFrameToMat(frontFrame);
+	struct SwsContext* sws_ctx = sws_getContext(
+		avframe->width, avframe->height, static_cast<AVPixelFormat>(avframe->format),
+		m_width, m_height, AV_PIX_FMT_BGR24,
+		SWS_BILINEAR, NULL, NULL, NULL);
+
+	cv::Mat mat(m_height, m_width, CV_8UC3);
+	// 执行转换
+	uint8_t* dest[4] = { mat.data, NULL, NULL, NULL };
+	int dest_linesize[4] = { mat.step[0], 0, 0, 0 };
+	sws_scale(sws_ctx, avframe->data, avframe->linesize, 0, avframe->height, dest, dest_linesize);
+	
+	//return mat;
+	av_frame_free(&avframe);
+	sws_freeContext(sws_ctx);
+	
+	return mat;
+}
+
+double EditDecoder::frontTimeStep()
+{
+	if (m_videoFrameVec.empty())
+	{
+		return -1;
+	}
+	else
+	{
+		return m_videoFrameVec.front()->pts * videoTimeBaseMs();
+	}
 }
 
 void EditDecoder::decode()
@@ -34,16 +81,12 @@ void EditDecoder::decode()
 	}
 	av_init_packet(packet);
 
-	int frame_count = 0;
-	m_stopDecode = false;
-
-	double lastFrameTimeStep = 0;
-	int read_frame_rtn = av_read_frame(m_formatContext, packet);
+	
 	int duration_pts = -1;
-
 	int loopCount = 0;	//第几次循环
 	int loopMaxPts = 0;	//最大pts
 
+	int read_frame_rtn = av_read_frame(m_formatContext, packet);
 	if (read_frame_rtn >= 0)	//如果第一次读取都失败，直接退出，否则进入循环处理
 	{
 		while (read_frame_rtn >= 0) 
@@ -62,38 +105,35 @@ void EditDecoder::decode()
 					while (avcodec_receive_frame(video_context, bufferFrame) == 0) {	//从解码器中取出解码后的frame
 						if (m_stopDecode) break;
 						loopMaxPts = bufferFrame->pts > loopMaxPts ? bufferFrame->pts : loopMaxPts;
-						//暂停解码
-						//double backTime = bufferFrame->pts * videoTimeBaseMs();//当前帧的时间戳秒
-						//if (backTime > m_playController->playTimeSeconds())
-						//{
-							//复制一帧数据
-							AVFrame* tempFrame = av_frame_alloc();
-							if (tempFrame)
+
+						//复制一帧数据
+						AVFrame* tempFrame = av_frame_alloc();
+						if (tempFrame)
+						{
+							if (av_frame_ref(tempFrame, bufferFrame) < 0)
 							{
-								if (av_frame_ref(tempFrame, bufferFrame) < 0)
-								{
-									av_frame_free(&tempFrame);
-								}
-
-								tempFrame->pts = tempFrame->pts + loopMaxPts * loopCount;	//根据循环次数计算新的pts
-
-								//判断缓存中的帧数据，是否满足播放时间戳+缓冲时间
-								if (m_videoFrameVec.empty())
-								{
-									m_videoFrameVec.push_back(tempFrame);
-								}
-								else
-								{
-									while (m_videoFrameVec.size() > m_bufFrameCount && m_seekFlag == false)
-									{
-										if (m_stopDecode) break;
-										std::this_thread::sleep_for(std::chrono::microseconds(1));
-									}
-
-									if (!m_seekFlag) m_videoFrameVec.push_back(tempFrame);
-								}
+								av_frame_free(&tempFrame);
 							}
-						//}
+
+							tempFrame->pts = tempFrame->pts + loopMaxPts * loopCount;	//根据循环次数计算新的pts
+							//tempFrame->pts += (m_startPlayTime * (tempFrame->time_base.den / tempFrame->time_base.num)); //根据开始播放时间和time_base到退出startPts
+
+							//判断缓存中的帧数据，是否满足播放时间戳+缓冲时间
+							if (m_videoFrameVec.empty())
+							{
+								m_videoFrameVec.push_back(tempFrame);
+							}
+							else
+							{
+								while (m_videoFrameVec.size() >= m_bufFrameCount && m_seekFlag == false)
+								{
+									if (m_stopDecode) break;
+									std::this_thread::sleep_for(std::chrono::milliseconds(1));
+								}
+
+								if (!m_seekFlag) m_videoFrameVec.push_back(tempFrame);
+							}
+						}
 					}
 				}
 			}

@@ -1,4 +1,5 @@
 #pragma once
+#include <opencv2/opencv.hpp>
 #include "VideoPlay/VideoDecoder.h"
 #include "VideoPlay/PlayController.h"
 
@@ -6,9 +7,19 @@
 class EditDecoder : public VideoDecoder{
 public:
 	EditDecoder();
-	~EditDecoder();
+	virtual ~EditDecoder();
+
+	void setStartPlayTime(int time);
+
+	cv::Mat popFrontMat();
+
+	double frontTimeStep();
+
+	int m_width;
+	int m_height;
 protected:
 	virtual void decode() override;
 private:
-
+	int m_startPlayTime = 0;
+	bool m_isLoopDecode = false;
 };
