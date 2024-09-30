@@ -22,6 +22,7 @@
 #include "VideoEdit/MoveLabel.h"
 #include "VideoEdit/FramePusher.h"
 #include "VideoEdit/EditDecoder.h"
+#include "VideoPlay/VideoTimer.h"
 //#include "VideoEdit/PushOpencv.h"
 //#include "VideoEdit/testOpencv.cpp"
 #include <windows.h>
@@ -33,20 +34,6 @@
 #include <memory>
 #include <iostream>
 
-//class A
-//{
-//public:
-//	A() {
-//		std::cout << "construct A" << std::endl;
-//	};
-//	~A() {
-//		std::cout << "release A" << std::endl;
-//	};
-//};
-//void test(std::vector<std::shared_ptr<A>>& aVec)
-//{
-//	aVec.push_back(std::make_shared<A>());
-//}
 
 //线程向session里面的rtp连接发送帧
 void sendFrameThread(RTSPServer* server, MediaSessionId sessionId, H264File* file);
@@ -131,10 +118,20 @@ int main(int argc, char *argv[]) {
 	//	co_sched.Start();
 	//});
 
+	static FramePusher pusher;
+	pusher.openCodec(1280, 720, 30);
+	//pusher.openCodec(800, 600, 60);
 
 	Fl_Window fw(0, 0, 800, 600);
 	PlayWidget form(0, 0, 800, 600, "");
 	fw.show(argc, argv);
+
+	Fl_Window fw1(0, 0, 1280, 720);
+	EditPanel ep(0, 0, 1280, 720, "editPanelInstance");
+	ep.startPusher(&pusher);
+	fw1.end();
+	fw1.show(argc, argv);
+	Fl::run();
 
 	//EditDecoder eDecoder;
 	//eDecoder.initDecode("C:/Users/xctan/Pictures/gif5.gif");
@@ -142,8 +139,8 @@ int main(int argc, char *argv[]) {
 
 
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-	Fl_Window mainW(0,0,80,80);
-	mainW.show(argc, argv);
+	//Fl_Window mainW(0,0,80,80);
+	//mainW.show(argc, argv);
 	int lrtn = Fl::run();
 	//stopThread = true;
 	//co_sched.Stop();

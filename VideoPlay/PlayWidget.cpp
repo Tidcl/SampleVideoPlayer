@@ -173,13 +173,16 @@ void PlayWidget::btn_play_do()
 	if (pc->status() == PlayStatus::stop)
 	{
 		pc->setVideoUrl(m_input->value());
-		pc->startPlay();
+		//pc->startPlay();
+		pc->startPlayByTimer();
 	}
 	else
 	{
-		pc->stopPlay();
+		//pc->stopPlay();
+		pc->stopPlayByTimer();
 		pc->setVideoUrl(m_input->value());
-		pc->startPlay();
+		//pc->startPlay();
+		pc->startPlayByTimer();
 	}
 }
 
