@@ -17,12 +17,20 @@ class FramePusher {
 public:
 	FramePusher();
 	~FramePusher();
+	void setPushFPS(int fps);
+
 	void updateFrame(cv::Mat& mat);
 	void pushFrame(cv::Mat& mat);
+	int bufferCount();
+	void clearBuffer();
+
 	int openCodec(int width = 1280, int height = 720, int fps = 30);
+	void closeCodec();
+
 	void startPush();
 	void stopPush();
-	int bufferCount();
+
+	bool isInitSuccessful();
 private:
 	int pushing();
 
@@ -47,4 +55,5 @@ private:
 	std::shared_ptr<SwsContext> m_sws_ctx = nullptr;
 
 	std::mutex m_mutex;
+	bool m_initSuccessful = false;
 };

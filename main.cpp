@@ -35,6 +35,49 @@
 #include <iostream>
 
 
+class A
+{
+public:
+	A() {};
+	~A() {};
+
+	A(A& left)
+	{
+		std::cout << "construct" << std::endl;
+	};
+	A(A&& left)
+	{
+		std::cout << "move construct" << std::endl;
+	};
+	A& operator=(const A& left) {
+		std::cout << "= construct" << std::endl;
+		return *this;
+	};
+	A& operator=(const A&& left) {
+		std::cout << "= move construct" << std::endl;
+		return *this;
+	};
+};
+
+class UseA {
+public:
+	UseA() {};
+	~UseA() {};
+
+	void setA(std::shared_ptr<A> a)
+	{
+		m_a = a;
+	};
+
+	void setA(A a)
+	{
+		m_aa = a;
+	};
+
+	A m_aa;
+	std::shared_ptr<A> m_a;
+};
+
 //线程向session里面的rtp连接发送帧
 void sendFrameThread(RTSPServer* server, MediaSessionId sessionId, H264File* file);
 
@@ -71,6 +114,11 @@ void enablePlayer(int argc, char* argv[])
 
 int main(int argc, char *argv[]) {
 		
+	//UseA cA;
+	//std::shared_ptr<A> sA = std::make_shared<A>();
+	//cA.setA(sA);
+	//A a;
+	//cA.setA(a);
 	timeBeginPeriod(1);		//初始化计时分辨率
 
 	//testCameraPush();
@@ -118,17 +166,16 @@ int main(int argc, char *argv[]) {
 	//	co_sched.Start();
 	//});
 
-	static FramePusher pusher;
-	pusher.openCodec(1280, 720, 30);
+
 	//pusher.openCodec(800, 600, 60);
 
-	Fl_Window fw(0, 0, 800, 600);
-	PlayWidget form(0, 0, 800, 600, "");
-	fw.show(argc, argv);
+	//Fl_Window fw(0, 0, 800, 600);
+	//PlayWidget form(0, 0, 800, 600, "");
+	//fw.show(argc, argv);
 
 	Fl_Window fw1(0, 0, 1280, 720);
-	EditPanel ep(0, 0, 1280, 720, "editPanelInstance");
-	ep.startPusher(&pusher);
+	EditPanel ep(0, 0, 1280, 720);
+	//ep.startPusher(new FramePusher());
 	fw1.end();
 	fw1.show(argc, argv);
 	Fl::run();

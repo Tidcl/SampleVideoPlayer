@@ -12,9 +12,13 @@ FramePusher::~FramePusher()
 	stopPush();
 }
 
+void FramePusher::setPushFPS(int fps)
+{
+	m_frameRate = fps;
+}
+
 void FramePusher::updateFrame(cv::Mat& mat)
 {
-	//m_updateMat = mat;
 	std::swap(m_updateMat, mat);
 	m_updateFlag = true;
 }
@@ -23,6 +27,11 @@ void FramePusher::pushFrame(cv::Mat& mat)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 	m_pushVector.push_back(mat);
+}
+
+void FramePusher::clearBuffer()
+{
+	m_pushVector.clear();
 }
 
 int FramePusher::pushing()
@@ -72,7 +81,7 @@ int FramePusher::pushing()
 	m_stopPullFlag = false;
 
 	int frameCount = 0;
-	int frameTime = 1e3 / m_frameRate;
+	double frameTime = 1e3 / m_frameRate;
 
 	std::chrono::steady_clock::time_point start = std::chrono::high_resolution_clock::now();
 	while (!m_stopPullFlag) {
@@ -113,19 +122,20 @@ int FramePusher::pushing()
 			
 			if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0) {
 				std::cerr << "无法写入帧" << std::endl;
-				break;
+				//break;
+				goto end;
 			}
 			av_packet_unref(&pkt);
 		}
 
-		img.release();
+		//img.release();
 		long long frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
 		int64_t next_frame_time = frameCount++ * frameTime;
 		if (next_frame_time > frame_time) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(next_frame_time - frame_time));
 		}
 	}
-	
+end:
 	av_write_trailer(fmt_ctx);	// 写文件尾
 }
 
@@ -139,6 +149,7 @@ int FramePusher::openCodec(int width, int height, int fps)
 	m_frameRate = fps;
 
 	// 输出格式设置为RTMP推流
+	m_initSuccessful = false;
 	AVFormatContext* fmt_ctx = nullptr;
 	avformat_alloc_output_context2(&fmt_ctx, nullptr, "flv", m_serverPath.c_str());
 	if (!fmt_ctx) {
@@ -175,9 +186,6 @@ int FramePusher::openCodec(int width, int height, int fps)
 		codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
 
-	//AVDictionary* opt = nullptr;
-	//av_dict_set(&opt, "tune", "zerolatency", 0);
-
 	int rtn = 0;
 	if ((rtn = avcodec_open2(codec_ctx, codec, 0)) < 0) {
 		std::cerr << "无法打开编码器" << std::endl;
@@ -188,7 +196,14 @@ int FramePusher::openCodec(int width, int height, int fps)
 	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) { avcodec_free_context(&ptr); });
 
 	av_dump_format(fmt_ctx, 0, m_serverPath.c_str(), 1);
+	m_initSuccessful = true;
 	return 0;
+}
+
+void FramePusher::closeCodec()
+{
+	m_fmt_ctx.reset();
+	m_codec_ctx.reset();
 }
 
 void FramePusher::resizeSws(cv::Mat& img)
@@ -220,6 +235,9 @@ void FramePusher::stopPush()
 	if (m_pullThread && m_pullThread->joinable())
 	{
 		m_pullThread->join();
+		m_initSuccessful = false;
+		closeCodec();
+		clearBuffer();
 	}
 }
 
@@ -228,4 +246,8 @@ int FramePusher::bufferCount()
 	return m_pushVector.size();
 }
 
+bool FramePusher::isInitSuccessful()
+{
+	return m_initSuccessful;
+}
 

@@ -15,10 +15,6 @@ void EditDecoder::setStartPlayTime(int time)
 	m_startPlayTime = time;
 }
 
-//cv::Mat& EditDecoder::lastMat()
-//{
-//	return m_lastMat;
-//}
 
 cv::Mat EditDecoder::popFrontMat()
 {
