@@ -5,7 +5,9 @@
 
 class WebSocketServer : public TcpServer {
 public:
-	WebSocketServer(std::shared_ptr<Poller> poller) : TcpServer(poller) {};
+	WebSocketServer(std::shared_ptr<Poller> poller) : TcpServer(poller) {
+		;
+	};
 	~WebSocketServer() {};
 
 	virtual void acceptHandle() override;
@@ -22,6 +24,7 @@ void WebSocketServer::acceptHandle()
 		std::shared_ptr<WebSocketClientSession> tcpClient = std::make_shared<WebSocketClientSession>();
 		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
 		clientChannel->setFD(clientFd);
+		clientChannel->setHandle(tcpClient);
 
 		tcpClient->setChannel(clientChannel);
 		clientChannel->setPoller(m_poller);

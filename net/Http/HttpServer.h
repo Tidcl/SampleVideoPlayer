@@ -16,9 +16,10 @@ public:
 		SOCKET clientFd = accept(fd, &addr, &slen);
 		if (clientFd > 0)
 		{
-			std::shared_ptr<HttpClientSession> tcpClient = std::make_shared<HttpClientHandle>();
+			std::shared_ptr<HttpClientSession> tcpClient = std::make_shared<HttpClientSession>();
 			std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
 			clientChannel->setFD(clientFd);
+			clientChannel->setHandle(tcpClient);
 			tcpClient->setChannel(clientChannel);
 			clientChannel->setPoller(m_poller);
 		}

@@ -30,6 +30,11 @@ FDEventType Channel::eventType()
 	return m_focusEventType;
 }
 
+void Channel::setWriteFile(std::ifstream* ifs)
+{
+	m_writeByteBuffer.setIfstream(ifs);
+}
+
 void Channel::setHandle(std::shared_ptr<Handle> handle)
 {
 	m_handle = handle;
@@ -84,9 +89,7 @@ void Channel::handle()
 		}
 		else if (rtn == -1)
 		{
-			m_poller->rmFD(m_fd);
-			closesocket(m_fd);
-			m_handle.reset();	//释放掉handler
+			closeHandle();
 		}
 		else
 		{

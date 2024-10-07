@@ -33,7 +33,7 @@ public:
 	void setEventType(FDEventType et);
 	FDEventType eventType();
 
-	void setWriteFile(std::ifstream* ifs) { m_writeByteBuffer.setIfstream(ifs); };
+	void setWriteFile(std::ifstream* ifs);
 private:
 	std::shared_ptr<Poller> m_poller;	//用于更新自己的事件标志 以Channel的身份参与事件循环
 	SOCKET m_fd = -1;

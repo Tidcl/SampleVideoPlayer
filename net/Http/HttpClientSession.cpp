@@ -87,7 +87,7 @@ void HttpClientSession::dealFileQeq()
 			fileLength = (long)ifs->tellg();
 			ifs->seekg(0, std::ios::beg);
 			m_channel->setWriteFile(ifs);
-			//m_channel->set
+			////m_channel->set
 			////std::string line;
 			//int readCount = 4096;
 			//content.init(readCount);
@@ -170,7 +170,7 @@ std::string HttpClientSession::getCurrentTimeInGMT()
 
 std::string HttpClientSession::getContentType(std::string& fileSuffix)
 {
-	if (fileSuffix == "html" || fileSuffix == "plain")
+	if (fileSuffix == "html" || fileSuffix == "plain" || fileSuffix == "txt")
 	{
 		return "text/" + fileSuffix;
 	}
@@ -195,7 +195,7 @@ std::string HttpClientSession::getContentType(std::string& fileSuffix)
 		return "application/" + fileSuffix;
 	}
 
-	return "application/" + fileSuffix;
+	return "application/octet-stream";
 }
 
 bool HttpClientSession::fileExists(const std::string& filename)

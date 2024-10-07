@@ -1,8 +1,3 @@
-//#include "net/testnet.hpp"
-
-//#include "net/TcpServer.h"
-//#include "HttpServer.h"
-//#include "WebSocketServer.h"
 #include "SelectPoller.h"
 #include "RTSPServer.h"
 #include "H264File.h"
@@ -13,8 +8,6 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Table.H>
 #include <FL/Fl_Scroll.H>
-//#include "testCompiler.h"
-
 
 #include "VideoPlay/PlayController.h"
 #include "VideoPlay/PlayWidget.h"
@@ -23,12 +16,11 @@
 #include "VideoEdit/FramePusher.h"
 #include "VideoEdit/EditDecoder.h"
 #include "VideoPlay/VideoTimer.h"
-//#include "VideoEdit/PushOpencv.h"
-//#include "VideoEdit/testOpencv.cpp"
+#include "net/WebSocket/WebSocketServer.h"
+#include "net/Http/HttpServer.h"
 #include <windows.h>
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
-//#pragma comment(lib, "Ws2_32.lib")
 
 #include <vector>
 #include <memory>
@@ -81,118 +73,175 @@ public:
 //线程向session里面的rtp连接发送帧
 void sendFrameThread(RTSPServer* server, MediaSessionId sessionId, H264File* file);
 
-void testEditCodecer()
-{
-	EditDecoder eDecoder;
-	//eDecoder.initDecode("C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4");
-	eDecoder.initDecode("C:/Users/xctan/Pictures/gif5.gif");
-	eDecoder.startDecode();
-}
 
-void enableEditor(int argc, char* argv[])
-{
-	static FramePusher pusher;
-	pusher.openCodec();
-
-	Fl_Window fw1(0, 0, 800, 600);
-	EditPanel ep(0, 0, 800, 600, "editPanelInstance");
-	ep.startPusher(&pusher);
-	fw1.end();
-	fw1.show(argc, argv);
-
-	Fl::run();
-}
-
-void enablePlayer(int argc, char* argv[])
-{
-	Fl_Window fw(0, 0, 800, 600);
-	PlayWidget form(0, 0, 800, 600, "");
-	fw.show(argc, argv);
-
-	Fl::run();
-}
-
+char* introduce = R"(
+1.video player
+2.video pusher
+3.http webserver
+4.websocket echo webserver
+5.rtmp push client
+input q to quit
+)";
 int main(int argc, char *argv[]) {
-		
-	//UseA cA;
-	//std::shared_ptr<A> sA = std::make_shared<A>();
-	//cA.setA(sA);
-	//A a;
-	//cA.setA(a);
 	timeBeginPeriod(1);		//初始化计时分辨率
 
-	//testCameraPush();
-
-	//SetConsoleOutputCP(65001);	//设置控制台输出的编码方式
-	// 
-	////初始化网络
-	//WSADATA wsaData;
-	//int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	//if (result != 0) {
-	//	std::cerr << "WSAStartup failed: " << result << std::endl;
-	//	return 1;
-	//}
-	//std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();	//创建事件循环对象
-	////std::shared_ptr<HttpServer> ts = std::make_shared<HttpServer>(spoller);
-	////ts->listen(spoller, 8890);
-	// 
-	////std::shared_ptr<WebSocketServer> tws = std::make_shared<WebSocketServer>(spoller);
-	////tws->listen(spoller, 8891);
-	// 
-	//std::shared_ptr<RTSPServer> rtsps = std::make_shared<RTSPServer>(spoller);	//创建服务器对象
-	//rtsps->listen(554);	//设置监听端口
-	//RTSPSession* session = new RTSPSession();	
-	//session->addSource(channel_0, H264Source::CreateNew());
-	//MediaSessionId session_id = rtsps->AddSession(session);
-
-	//H264File h264_file;
-	//if (!h264_file.Open("../../Resource/test.h264")) {//"../../Resource/test.h264"
-	//	printf("Open %s failed.\n", argv[1]);
-	//	return 0;
-	//}
-	//std::thread t1(sendFrameThread, rtsps.get(), session_id, &h264_file);
-	//t1.detach();
-	//
-	//bool stopThread = false;
-	//创建协程
-	//go [&stopThread, spoller]() {
-	//	while (!stopThread)
-	//	{
-	//		spoller->poll();
-	//	}
-	//};
-	////启动一个线程进行协程循环
-	//std::thread t([]() {	
-	//	co_sched.Start();
-	//});
-
-
-	//pusher.openCodec(800, 600, 60);
-
-	//Fl_Window fw(0, 0, 800, 600);
-	//PlayWidget form(0, 0, 800, 600, "");
-	//fw.show(argc, argv);
-
-	Fl_Window fw1(0, 0, 1280, 720);
-	EditPanel ep(0, 0, 1280, 720);
-	//ep.startPusher(new FramePusher());
-	fw1.end();
-	fw1.show(argc, argv);
-	Fl::run();
-
-	//EditDecoder eDecoder;
-	//eDecoder.initDecode("C:/Users/xctan/Pictures/gif5.gif");
-	//eDecoder.startDecode();
+	//初始化网络
+	WSADATA wsaData;
+	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (result != 0) {
+		std::cerr << "WSAStartup failed: " << result << std::endl;
+		return 1;
+	}
 
 
 	Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-	//Fl_Window mainW(0,0,80,80);
-	//mainW.show(argc, argv);
-	int lrtn = Fl::run();
-	//stopThread = true;
-	//co_sched.Stop();
-	//t.join();
-	return lrtn;
+
+	//编写引导打开
+	printf("please input number:%s", introduce);
+
+	int number;
+	std::cin >> number;
+
+
+
+	if (number == 1)
+	{
+		Fl_Window fw(0, 0, 800, 600);
+		PlayWidget form(0, 0, 800, 600, "");
+		fw.show(argc, argv);
+		return Fl::run();
+	}
+	else if (number == 2)
+	{
+		Fl_Window fw1(0, 0, 1280, 720);
+		EditPanel ep(0, 0, 1280, 720);
+		fw1.end();
+		fw1.show(argc, argv);
+		return Fl::run();
+	}
+	else if (number == 3)
+	{
+		std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();	//创建事件循环对象
+		std::shared_ptr<HttpServer> ts = std::make_shared<HttpServer>(spoller);
+		ts->listen(8890);
+
+		bool stopThread = false;
+		//创建协程
+		go[&stopThread, spoller]() {
+			printf("server starting...\n");
+			while (!stopThread)
+			{
+				spoller->poll();
+			}
+		};
+		//启动一个线程进行协程循环
+		std::thread t([]() {
+			co_sched.Start();
+		});
+
+
+		char buffer[32];
+		while (true)
+		{
+			memset(buffer, 0, 32);
+			std::cin >> buffer;
+			if (strcmp(buffer, "q") == 0)
+			{
+				return 0;
+			}
+		}
+
+
+		stopThread = true;
+		co_sched.Stop();
+		t.join();
+	}
+	else if (number == 4)
+	{
+		std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();	//创建事件循环对象
+		std::shared_ptr<WebSocketServer> tws = std::make_shared<WebSocketServer>(spoller);
+		tws->listen(8891);
+
+		bool stopThread = false;
+		//创建协程
+		go[&stopThread, spoller]() {
+			printf("server starting...\n");
+			while (!stopThread)
+			{
+				spoller->poll();
+			}
+		};
+		//启动一个线程进行协程循环
+		std::thread t([]() {
+			co_sched.Start();
+		});
+
+
+		char buffer[32];
+		while (true)
+		{
+			memset(buffer, 0, 32);
+			std::cin >> buffer;
+			if (strcmp(buffer, "q") == 0)
+			{
+				return 0;
+			}
+		}
+
+
+		stopThread = true;
+		co_sched.Stop();
+		t.join();
+	}
+	else if (number == 5)
+	{
+		std::shared_ptr<SelectPoller> spoller = std::make_shared<SelectPoller>();	//创建事件循环对象
+		std::shared_ptr<RTSPServer> rtsps = std::make_shared<RTSPServer>(spoller);	//创建服务器对象
+		rtsps->listen(554);	//设置监听端口
+		RTSPSession* session = new RTSPSession();	
+		session->addSource(channel_0, H264Source::CreateNew());
+		MediaSessionId session_id = rtsps->AddSession(session);
+		H264File h264_file;
+		if (!h264_file.Open("../../Resource/test.h264")) {//"../../Resource/test.h264"
+			printf("Open %s failed.\n", argv[1]);
+			return 0;
+		}
+		std::thread t1(sendFrameThread, rtsps.get(), session_id, &h264_file);
+		t1.detach();
+
+		bool stopThread = false;
+		//创建协程
+		go[&stopThread, spoller]() {
+			printf("rtsp://127.0.0.1:554/live\n");
+			printf("server starting...\n");
+			while (!stopThread)
+			{
+				spoller->poll();
+			}
+		};
+		//启动一个线程进行协程循环
+		std::thread t([]() {
+			co_sched.Start();
+		});
+
+
+		char buffer[32];
+		while (true)
+		{
+			memset(buffer, 0, 32);
+			std::cin >> buffer;
+			if (strcmp(buffer, "q") == 0)
+			{
+				return 0;
+			}
+		}
+
+
+		stopThread = true;
+		co_sched.Stop();
+		t.join();
+	}
+	return 0;
 }
 
 

@@ -163,6 +163,10 @@ public:
 		m_readPos = 0;
 	}
 
+	int left(){
+		return (int)(m_writePos - m_readPos);
+	}
+
 	int length() {
 		return (int)(m_writePos - m_readPos);
 	};
