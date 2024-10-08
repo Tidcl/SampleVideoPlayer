@@ -72,7 +72,7 @@ private:
 	std::shared_ptr<FramePusher> m_framePusher = nullptr;	//帧推送器
 	std::shared_ptr<FrameComposer> m_composer = nullptr;
 
-	VideoTimer m_composeTimer;
+	//VideoTimer m_composeTimer;
 	int m_composeFrameFPS = 60;	//合成帧的fps，以该fps合成帧发送给推送器，以120帧合成以60帧合成
 
 	cv::Mat m_bufferFrame;

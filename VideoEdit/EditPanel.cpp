@@ -37,7 +37,7 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	//m_bufferFrame = cv::Mat::zeros(cv::Size(m_frameShow->w(), m_frameShow->h()), CV_8UC3);
 
 	std::shared_ptr<ImgSource> imgSource1 = std::make_shared<ImgSource>();
-	imgSource1->m_url = "C:/Users/xctan/Pictures/2.jpg";
+	imgSource1->m_url = "../../Resource/2.jpg";
 	imgSource1->m_type = SourceType::Picture;
 	imgSource1->m_x = 0;
 	imgSource1->m_y = 0;
@@ -46,7 +46,7 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	imgSource1->initSource();
 
 	std::shared_ptr<ImgSource>  imgSource2 = std::make_shared<ImgSource>();
-	imgSource2->m_url = "C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4";	//C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4 C:/Users/xctan/Pictures/gif5.gif
+	imgSource2->m_url = "../../Resource/SampleVideo_1280x720_10mb.mp4";	//C:/Users/xctan/Videos/SampleVideo_1280x720_10mb.mp4 C:/Users/xctan/Pictures/gif5.gif
 	imgSource2->m_type = SourceType::Video;
 	imgSource2->m_imgMat = cv::imread(imgSource2->m_url, cv::IMREAD_COLOR);
 	imgSource2->m_pauseFlag = false;
@@ -57,7 +57,7 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	imgSource2->initSource();
 
 	std::shared_ptr<ImgSource>  imgSource3 = std::make_shared<ImgSource>();
-	imgSource3->m_url = "C:/Users/xctan/Pictures/gif5.gif";	//C:/Users/xctan/Pictures/5.jpg
+	imgSource3->m_url = "../../Resource/gif5.gif";	//C:/Users/xctan/Pictures/5.jpg
 	imgSource3->m_type = SourceType::Gif;
 	imgSource3->m_x = 0;
 	imgSource3->m_y = 0;
@@ -161,7 +161,7 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 
 EditPanel::~EditPanel()
 {
-	m_composeTimer.stop();
+	//m_composeTimer.stop();
 	delete m_frameShow;
 	m_frameShow = nullptr;
 
@@ -180,6 +180,12 @@ EditPanel::~EditPanel()
 	m_addLay = nullptr;
 	delete m_delLay;
 	m_delLay = nullptr;
+
+	delete m_moveLabel;
+	m_moveLabel = nullptr;
+
+	delete m_showFrame;
+	m_showFrame = nullptr;
 }
 
 void EditPanel::updateViewLabel()
