@@ -7,7 +7,7 @@ FrameComposer::FrameComposer()
 
 FrameComposer::~FrameComposer()
 {
-
+	m_composeTimer.stop();
 }
 
 void FrameComposer::setSize(int width, int height)
