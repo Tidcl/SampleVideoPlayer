@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Comman.h"
+#include "Common.h"
 #include "Channel.h"
 
 class Channel;
