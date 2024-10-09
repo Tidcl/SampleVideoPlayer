@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(VideoEditor VERSION 0.1.0 LANGUAGES C CXX)
 
+# 引入第三方库
+
 #fltk
 find_package(FLTK REQUIRED PATHS ../develep/fltk-1.3.9/build)
 include_directories(${FLTK_INCLUDE_DIR})
@@ -24,6 +26,10 @@ file(GLOB opencv_libs "C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/
 #libgo
 include_directories(../develep/libgo/include)
 link_directories(../develep/libgo/lib)
+
+#spdlog
+include_directories(../develep/spdlog/build/include)
+link_directories(../develep/spdlog/build/Debug)
 
 #设置运行目录 可以通过set_target_properties
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY C:/Users/xctan/Code/opencv-4.10.0/build/install/x64/vc17/bin)
@@ -66,5 +72,6 @@ target_link_libraries(VideoEditor avcodec avdevice avfilter avformat avutil swre
 target_link_libraries(VideoEditor zlibd zlibstaticd)
 target_link_libraries(VideoEditor ${opencv_libs})
 target_link_libraries(VideoEditor libgo)
+target_link_libraries(VideoEditor spdlogd)
 # 查找 WinSock 库
 target_link_libraries(VideoEditor ws2_32)
