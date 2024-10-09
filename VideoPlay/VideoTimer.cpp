@@ -28,9 +28,10 @@ void VideoTimer::start()
 		std::chrono::steady_clock::time_point start;
 
 		long long duration = 0;
-		double leftTimeUs = 0;
-		double tempLoopCount = 0;
+		long long leftTimeUs = 0;
+		long long tempLoopCount = 1;
 		long long waiteTime = 0;
+		start = std::chrono::high_resolution_clock::now();
 
 		while (m_stop == false)
 		{
@@ -39,24 +40,38 @@ void VideoTimer::start()
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
 
-			start = std::chrono::high_resolution_clock::now();
+			
 			if (m_func) m_ffun();
 
-			duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count();
-			leftTimeUs = m_intervalms * 1000 - duration;	//计算剩余的微妙
-			tempLoopCount = (duration / (m_intervalms * 1000));
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+			leftTimeUs = m_intervalms * m_loopCount - duration;	//计算剩余的微妙
+			m_loopCount++;
 			if (leftTimeUs > 0)	//还需要等待
 			{
-				std::this_thread::sleep_for(std::chrono::microseconds((long)leftTimeUs));
+				std::this_thread::sleep_for(std::chrono::milliseconds((long)leftTimeUs));
+			}
+			else if (leftTimeUs < 0) //多出来的时间
+			{
+				leftTimeUs = -leftTimeUs;
+				auto left = leftTimeUs % (long)m_intervalms;
+				if (left == 0)
+				{
+					m_loopCount += leftTimeUs / m_intervalms;
+				}
+				else
+				{
+					m_loopCount += leftTimeUs / m_intervalms;
+					waiteTime = m_intervalms - left;
+					std::this_thread::sleep_for(std::chrono::milliseconds(waiteTime));
+					//std::cout << "us   m_interval " << m_intervalms * 1000 << "    duration " << duration << "     waiteTime " << waiteTime << "    tempLoopCount " << tempLoopCount << std::endl;
+					m_loopCount++;
+				}
+			}
+			else
+			{
 				m_loopCount++;
 			}
-			else //多出来的时间
-			{
-				waiteTime = (leftTimeUs)+(tempLoopCount * m_intervalms * 1000);
-				std::this_thread::sleep_for(std::chrono::microseconds(waiteTime));
-				//std::cout << "us   m_interval " << m_intervalms * 1000 << "    duration " << duration << "     waiteTime " << waiteTime << "    tempLoopCount " << tempLoopCount << std::endl;
-				m_loopCount += (tempLoopCount + 1);
-			}
+			m_durationMS = m_intervalms * m_loopCount;
 		}
 	});
 
@@ -79,5 +94,5 @@ void VideoTimer::stop()
 
 double VideoTimer::timeMS()
 {
-	return m_intervalms * m_loopCount;
+	return m_durationMS;
 }
