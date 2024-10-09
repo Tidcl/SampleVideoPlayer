@@ -19,9 +19,13 @@ void EditDecoder::setStartPlayTime(int time)
 cv::Mat EditDecoder::popFrontMat()
 {
 	if (m_videoFrameVec.empty()) return cv::Mat();
-
-	auto avframe = m_videoFrameVec.front();
-	m_videoFrameVec.pop_front();
+	
+	AVFrame* avframe = nullptr;
+	{
+		std::lock_guard<std::mutex> guard(m_mutex);
+		avframe = m_videoFrameVec.front();
+		m_videoFrameVec.pop_front();
+	}
 	//cv::Mat mat = AVFrameToMat(frontFrame);
 	struct SwsContext* sws_ctx = sws_getContext(
 		avframe->width, avframe->height, static_cast<AVPixelFormat>(avframe->format),
@@ -117,6 +121,7 @@ void EditDecoder::decode()
 							//判断缓存中的帧数据，是否满足播放时间戳+缓冲时间
 							if (m_videoFrameVec.empty())
 							{
+								std::lock_guard<std::mutex> guard(m_mutex);
 								m_videoFrameVec.push_back(tempFrame);
 							}
 							else
@@ -127,7 +132,11 @@ void EditDecoder::decode()
 									std::this_thread::sleep_for(std::chrono::milliseconds(1));
 								}
 
-								if (!m_seekFlag) m_videoFrameVec.push_back(tempFrame);
+								if (!m_seekFlag)
+								{
+									std::lock_guard<std::mutex> guard(m_mutex);
+									m_videoFrameVec.push_back(tempFrame);
+								}
 							}
 						}
 					}

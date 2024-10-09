@@ -22,4 +22,5 @@ protected:
 private:
 	int m_startPlayTime = 0;
 	bool m_isLoopDecode = false;
+	std::mutex m_mutex;
 };
