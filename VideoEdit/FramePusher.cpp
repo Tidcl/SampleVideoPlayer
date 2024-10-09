@@ -17,6 +17,11 @@ void FramePusher::setPushFPS(int fps)
 	m_frameRate = fps;
 }
 
+int FramePusher::FPS()
+{
+	return m_frameRate;
+}
+
 void FramePusher::updateFrame(cv::Mat& mat)
 {
 	std::swap(m_updateMat, mat);
@@ -47,14 +52,6 @@ int FramePusher::pushing()
 	}
 
 	avcodec_parameters_from_context(stream->codecpar, codec_ctx);
-
-	// 打开输出URL
-	if (!(fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
-		if (avio_open(&fmt_ctx->pb, fmt_ctx->url, AVIO_FLAG_WRITE) < 0) {
-			std::cerr << "无法打开输出URL" << std::endl;
-			return -1;
-		}
-	}
 
 	// 写文件头
 	if (avformat_write_header(fmt_ctx, nullptr) < 0) {
@@ -95,40 +92,42 @@ int FramePusher::pushing()
 			std::swap(img, mat);
 		}
 
-		if (img.empty())
+		if (img.empty() == false)
 		{
-			std::this_thread::sleep_for(std::chrono::microseconds(500));
+			uint8_t* inData[1] = { img.data };
+			int inLinesize[1] = { static_cast<int>(img.step) };
+			resizeSws(img);	// 重置sws的转换分辨率,将img转为配置的成员宽高
+			sws_scale(m_sws_ctx.get(), inData, inLinesize, 0, img.rows, frame->data, frame->linesize);
+			frame->pts = frame_index++;	// 设置帧的 PTS
+			if (avcodec_send_frame(codec_ctx, frame) < 0) {
+				std::cerr << "无法发送帧到编码器" << std::endl;
+			}
+
+
+			//从编码器取出编码好的一帧
+			int rtn = 0;
+			while ((rtn = avcodec_receive_packet(codec_ctx, &pkt)) == 0) {
+				pkt.stream_index = stream->index;
+				pkt.pts = av_rescale_q(pkt.pts, codec_ctx->time_base, stream->time_base);
+				pkt.dts = av_rescale_q(pkt.dts, codec_ctx->time_base, stream->time_base);
+				pkt.duration = av_rescale_q(pkt.duration, codec_ctx->time_base, stream->time_base);
+				pkt.pos = -1;
+
+				if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0) {
+					std::cerr << "无法写入帧" << std::endl;
+					//break;
+					goto end;
+				}
+				av_packet_unref(&pkt);
+			}
+			img.release();
+		}
+		else
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			continue;
 		}
 
-		uint8_t* inData[1] = { img.data };
-		int inLinesize[1] = { static_cast<int>(img.step) };
-		resizeSws(img);	// 重置sws的转换分辨率,将img转为配置的成员宽高
-		sws_scale(m_sws_ctx.get(), inData, inLinesize, 0, img.rows, frame->data, frame->linesize);
-		frame->pts = frame_index++;	// 设置帧的 PTS
-		if (avcodec_send_frame(codec_ctx, frame) < 0) {
-			std::cerr << "无法发送帧到编码器" << std::endl;
-		}
-
-
-		//从编码器取出编码好的一帧
-		int rtn = 0;
-		while ((rtn = avcodec_receive_packet(codec_ctx, &pkt)) == 0) {
-			pkt.stream_index = stream->index;
-			pkt.pts = av_rescale_q(pkt.pts, codec_ctx->time_base, stream->time_base);
-			pkt.dts = av_rescale_q(pkt.dts, codec_ctx->time_base, stream->time_base);
-			pkt.duration = av_rescale_q(pkt.duration, codec_ctx->time_base, stream->time_base);
-			pkt.pos = -1;
-			
-			if (av_interleaved_write_frame(fmt_ctx, &pkt) < 0) {
-				std::cerr << "无法写入帧" << std::endl;
-				//break;
-				goto end;
-			}
-			av_packet_unref(&pkt);
-		}
-
-		//img.release();
 		long long frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
 		int64_t next_frame_time = frameCount++ * frameTime;
 		if (next_frame_time > frame_time) {
@@ -143,7 +142,7 @@ end:
 
 int FramePusher::openCodec(int width, int height, int fps)
 {
-	stopPush();
+	//stopPush();
 	m_width = width;
 	m_height = height;
 	m_frameRate = fps;
@@ -192,6 +191,17 @@ int FramePusher::openCodec(int width, int height, int fps)
 		return -1;
 	}
 
+	// 打开输出URL
+	if (!(fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+		if (avio_open(&fmt_ctx->pb, fmt_ctx->url, AVIO_FLAG_WRITE) < 0) {
+			std::cerr << "无法打开输出URL" << std::endl;
+			avformat_free_context(fmt_ctx);
+			avcodec_free_context(&codec_ctx);
+			return -1;
+		}
+	}
+
+
 	m_fmt_ctx.reset(fmt_ctx, [](AVFormatContext* ptr) { avformat_free_context(ptr); });
 	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) { avcodec_free_context(&ptr); });
 
@@ -202,9 +212,12 @@ int FramePusher::openCodec(int width, int height, int fps)
 
 void FramePusher::closeCodec()
 {
-	m_fmt_ctx.reset();
-	m_codec_ctx.reset();
-}
+	if (m_codec_ctx)
+		m_codec_ctx.reset();
+
+	if(m_fmt_ctx)
+		m_fmt_ctx.reset();
+}	
 
 void FramePusher::resizeSws(cv::Mat& img)
 {

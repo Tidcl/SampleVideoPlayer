@@ -18,6 +18,7 @@ public:
 	FramePusher();
 	~FramePusher();
 	void setPushFPS(int fps);
+	int FPS();
 
 	void updateFrame(cv::Mat& mat);
 	void pushFrame(cv::Mat& mat);
@@ -53,6 +54,7 @@ private:
 	std::shared_ptr<AVFormatContext> m_fmt_ctx = nullptr;//解码器上下文
 	std::shared_ptr<AVCodecContext> m_codec_ctx = nullptr;//格式化上下文
 	std::shared_ptr<SwsContext> m_sws_ctx = nullptr;
+	AVStream* m_videoStream = nullptr;
 
 	std::mutex m_mutex;
 	bool m_initSuccessful = false;
