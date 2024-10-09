@@ -116,7 +116,7 @@ char* introduce = R"(
 4.websocket echo webserver
 5.rtmp push client
 
-input q to quit
+input q to quit:
 )";
 
 int main(int argc, char *argv[]) {
@@ -191,10 +191,11 @@ int main(int argc, char *argv[]) {
 		while (true)
 		{
 			memset(buffer, 0, 32);
+			std::cout << "input q to quit:" << std::endl;
 			std::cin >> buffer;
 			if (strcmp(buffer, "q") == 0)
 			{
-				return 0;
+				break;
 			}
 		}
 
@@ -229,10 +230,11 @@ int main(int argc, char *argv[]) {
 		while (true)
 		{
 			memset(buffer, 0, 32);
+			std::cout << "input q to quit:" << std::endl;
 			std::cin >> buffer;
 			if (strcmp(buffer, "q") == 0)
 			{
-				return 0;
+				break;
 			}
 		}
 
@@ -278,10 +280,11 @@ int main(int argc, char *argv[]) {
 		while (true)
 		{
 			memset(buffer, 0, 32);
+			std::cout << "input q to quit:" << std::endl;
 			std::cin >> buffer;
 			if (strcmp(buffer, "q") == 0)
 			{
-				return 0;
+				break;
 			}
 		}
 
