@@ -34,6 +34,7 @@ public:
 
 	void updateViewLabel();
 	void startPusher(FramePusher* pusher);
+	void updateShowMat(cv::Mat mat);
 	static void btn_clicked(Fl_Widget* widget, void* v);	//界面所有按钮的统一回调触发函数
 	static void drawImg(cv::Mat mat, void* val);
 protected:
@@ -72,8 +73,8 @@ private:
 	std::shared_ptr<FramePusher> m_framePusher = nullptr;	//帧推送器
 	std::shared_ptr<FrameComposer> m_composer = nullptr;
 
-	//VideoTimer m_composeTimer;
-	int m_composeFrameFPS = 60;	//合成帧的fps，以该fps合成帧发送给推送器，以120帧合成以60帧合成
+	VideoTimer m_updateTimer;	//更新界面定时器
+	int m_composeFrameFPS = 30;	//合成帧的fps，以该fps合成帧发送给推送器，以120帧合成以60帧合成
 
 	cv::Mat m_bufferFrame;
 	

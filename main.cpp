@@ -159,11 +159,12 @@ int main(int argc, char *argv[]) {
 	{
 		spdlog::get("log")->info("open video pusher");
 		Fl::add_handler([](int event)->int {return event == FL_SHORTCUT && Fl::event_key() == FL_Escape; });
-		Fl_Window fw1(0, 0, 1280, 720);
-		EditPanel ep(0, 0, 1280, 720);
+		Fl_Window fw1(0, 0, 1920, 1080);
+		EditPanel ep(0, 0, 1920, 1080);
 		fw1.end();
 		fw1.show(argc, argv);
-		return Fl::run();
+		auto rtn = Fl::run();
+		return rtn;
 	}
 	else if (number == 3)
 	{

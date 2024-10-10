@@ -34,7 +34,6 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	m_startPush->callback(&EditPanel::btn_clicked, this);
 	m_stopPush->callback(&EditPanel::btn_clicked, this);
 
-	//m_bufferFrame = cv::Mat::zeros(cv::Size(m_frameShow->w(), m_frameShow->h()), CV_8UC3);
 
 	std::shared_ptr<ImgSource> imgSource1 = std::make_shared<ImgSource>();
 	imgSource1->m_url = "../../Resource/2.jpg";
@@ -50,10 +49,14 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	imgSource2->m_type = SourceType::Video;
 	imgSource2->m_imgMat = cv::imread(imgSource2->m_url, cv::IMREAD_COLOR);
 	imgSource2->m_pauseFlag = false;
-	imgSource2->m_x = 250;
+	//imgSource2->m_x = 250;
+	//imgSource2->m_y = 0;
+	//imgSource2->m_width = 160 * 3;
+	//imgSource2->m_height = 90 * 3;
+	imgSource2->m_x = 0;
 	imgSource2->m_y = 0;
-	imgSource2->m_width = 160 * 3;
-	imgSource2->m_height = 90 * 3;
+	imgSource2->m_width = imgSource1->m_width;
+	imgSource2->m_height = imgSource1->m_height;
 	imgSource2->initSource();
 
 	std::shared_ptr<ImgSource>  imgSource3 = std::make_shared<ImgSource>();
@@ -67,7 +70,6 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 
 
 	m_framePusher = std::make_shared<FramePusher>();
-	//m_framePusher->startPush();
 	m_composer = std::make_shared<FrameComposer>();
 	m_composer->setPusher(m_framePusher);
 	m_composer->setShowCallback(drawImg, m_frameShow);
@@ -78,90 +80,15 @@ EditPanel::EditPanel(int x, int y, int w, int h, const char* str)
 	addImgSource(imgSource2);
 	addImgSource(imgSource3);
 	resetMoveLabel(2);
-	//m_composeTimer.setInterval(1000 / m_fps);
-	//m_composeTimer.setInterval(1000.0 / m_composeFrameFPS);
-	//m_composeTimer.setCallbackFun([](void* val) {
-	//	EditPanel* ep = (EditPanel*)val;
-	//	ep->composeFrame();
-	//	//从帧队列中取出
-	//}, this);
-	//m_composeTimer.start();
 
-
-	//m_showTimer.setInterval(1);
-	//m_showTimer.setCallbackFun([](void* val) {
-	//	EditPanel* ep = (EditPanel*)val;
-	//	ep->updateViewLabel();
-	//	//从帧队列中取出
-	//	}, this);
-	//m_showTimer.start();
 }
-
-
-
-//void EditPanel::composeFrame()
-//{
-//	//auto startTime_t = std::chrono::high_resolution_clock::now();
-//	static double frameTime = 1000.0 / m_composeFrameFPS;
-//	static double m_DecodeFrameMS = 0;
-//	static double m_playFrameMS = 0;
-//	//static double frameIndex = 0;
-//
-//	double nowTime = m_composeTimer.timeMS();
-//
-//	if (m_framePusher == nullptr)
-//	{
-//		return;
-//	}
-//
-//	//if (m_framePusher->bufferCount() >= 20)
-//	//{
-//	//	return;
-//	//}
-//
-//	cv::Mat bufferFrame(m_frameShow->h(), m_frameShow->w(), CV_8UC3);
-//	//遍历图源合成到合成帧中
-//	for (auto imgSour : m_imgSourceVec)
-//	{
-//		cv::Mat& mat = imgSour->getPointTimeMat(m_DecodeFrameMS);
-//
-//		//将图源重新缩放
-//		if (mat.rows == 0)
-//			continue;
-//		//如果焦点区域超出就需要裁剪原图
-//		mat.copyTo(bufferFrame(cv::Rect(imgSour->m_x, imgSour->m_y, imgSour->m_width, imgSour->m_height)));
-//	}
-//	if (nowTime > m_DecodeFrameMS)
-//	{
-//		if (m_framePusher)
-//		{
-//			m_framePusher->pushFrame(bufferFrame);
-//		}
-//	}
-//	m_DecodeFrameMS += frameTime;
-//
-//	if (nowTime > m_playFrameMS)
-//	{
-//		DrawInfo* di = new DrawInfo();
-//		di->mat = new cv::Mat;
-//		cv::cvtColor(bufferFrame, *(di->mat), cv::COLOR_BGR2RGB);
-//		di->ep = m_frameShow;
-//		Fl::awake([](void* val) {
-//			//auto nowTime = std::chrono::high_resolution_clock::now();
-//			//auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(nowTime.time_since_epoch()).count();
-//			//std::cout << "milliseconds = " << milliseconds << std::endl;
-//
-//			updateFrameShow(val);
-//		}, di);//此处直接设计一个函数，参数也指定传入label和image深拷贝
-//		Fl::check();
-//		m_playFrameMS += 100;	//10fps预览
-//	}
-//}
-
 
 EditPanel::~EditPanel()
 {
 	//m_composeTimer.stop();
+
+	m_composer->stopCompose();
+
 	delete m_frameShow;
 	m_frameShow = nullptr;
 
@@ -206,53 +133,10 @@ void EditPanel::startPusher(FramePusher* pusher)
 	//updateAFrame();
 }
 
-//void EditPanel::updateAFrame()
-//{
-//	//遍历图源合成到合成帧中
-//	cv::Mat resizeImgMat;
-//	auto startTime = std::chrono::high_resolution_clock::now();
-//	
-//	for (auto imgSour : m_imgSourceVec) 
-//	{
-//		int x = imgSour->m_x;
-//		int y = imgSour->m_y;
-//		int width = imgSour->m_width;
-//		int height = imgSour->m_height;
-//
-//
-//		//将图源重新缩放
-//		cv::Mat& mat = imgSour->getMat();
-//		if(mat.rows == 0) continue;
-//		//如果焦点区域超出就需要裁剪原图
-//		mat.copyTo(m_bufferFrame(cv::Rect(x, y, width, height)));
-//	}
-//
-//	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-//
-//	//合成帧更新到界面
-//	cv::Mat rgbImgMat;
-//	cv::cvtColor(m_bufferFrame, rgbImgMat, cv::COLOR_BGR2RGB);
-//	//m_showcvMat = rgbImgMat;	//显示合成帧存到成员变量
-//	if (m_showFrame) delete m_showFrame;	//用于显示的Fl_RGB_Image
-//	m_showFrame = new Fl_RGB_Image(rgbImgMat.data,	//该数据很可能随着rgbImgMat的生命周期变成悬挂指针
-//		rgbImgMat.cols,
-//		rgbImgMat.rows,
-//		3,
-//		rgbImgMat.step);
-//
-//	//cv::imshow("Image Window", m_bufferFrame);
-//
-//	//m_frameShow->image(m_showFrame);
-//	//if(m_framePusher) m_framePusher->updateFrame(m_bufferFrame);
-//
-//	//提交主线程刷新（会崩溃）
-//	//Fl::awake([](void* val) {
-//	//	EditPanel* ep = (EditPanel*)val;
-//	//	ep->updateViewLabel();
-//	//}, this);//此处直接设计一个函数，参数也指定传入label和image深拷贝
-//	//Fl::check();
-//	//redraw();
-//}
+void EditPanel::updateShowMat(cv::Mat mat)
+{
+	m_bufferFrame = mat;
+}
 
 void EditPanel::btn_clicked(Fl_Widget* widget, void* v)
 {
@@ -337,6 +221,8 @@ void EditPanel::resetMoveLabel(int index)
 
 void EditPanel::drawImg(cv::Mat mat, void* val)
 {
+	if (mat.empty()) return;
+
 	DrawInfo* di = new DrawInfo();
 	di->mat = new cv::Mat;
 	cv::cvtColor(mat, *(di->mat), cv::COLOR_BGR2RGB);
@@ -361,6 +247,7 @@ void EditPanel::drawImg(cv::Mat mat, void* val)
 		di->ep->redraw();
 		sdi = di;
 	}, di);//此处直接设计一个函数，参数也指定传入label和image深拷贝
+	//Fl::flush();
 	Fl::check();
 }
 
@@ -449,6 +336,7 @@ void EditPanel::btn_startPush()
 
 void EditPanel::btn_stopPush()
 {
+
 	m_framePusher->stopPush();
 }
 
