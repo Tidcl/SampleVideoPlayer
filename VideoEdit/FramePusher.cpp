@@ -28,9 +28,11 @@ void FramePusher::updateFrame(cv::Mat& mat)
 	m_updateFlag = true;
 }
 
-void FramePusher::pushFrame(cv::Mat& mat)
+void FramePusher::pushFrameToVec(cv::Mat& mat, int bufferCount)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
+	//if (m_pushVector.size() >= bufferCount)
+	//	m_pushVector.erase(m_pushVector.begin());
 	m_pushVector.push_back(mat);
 }
 
@@ -124,7 +126,7 @@ int FramePusher::pushing()
 		}
 		else
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			std::this_thread::sleep_for(std::chrono::microseconds(100));
 			continue;
 		}
 
@@ -136,6 +138,7 @@ int FramePusher::pushing()
 	}
 end:
 	av_write_trailer(fmt_ctx);	// 写文件尾
+	avcodec_close(codec_ctx);
 }
 
 
@@ -148,7 +151,7 @@ int FramePusher::openCodec(int width, int height, int fps)
 	m_frameRate = fps;
 
 	// 输出格式设置为RTMP推流
-	m_initSuccessful = false;
+	m_openSuccessful = false;
 	AVFormatContext* fmt_ctx = nullptr;
 	avformat_alloc_output_context2(&fmt_ctx, nullptr, "flv", m_serverPath.c_str());
 	if (!fmt_ctx) {
@@ -203,20 +206,26 @@ int FramePusher::openCodec(int width, int height, int fps)
 
 
 	m_fmt_ctx.reset(fmt_ctx, [](AVFormatContext* ptr) { avformat_free_context(ptr); });
-	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) { avcodec_free_context(&ptr); });
+	m_codec_ctx.reset(codec_ctx, [](AVCodecContext* ptr) {
+		avcodec_free_context(&ptr);
+		});
 
 	av_dump_format(fmt_ctx, 0, m_serverPath.c_str(), 1);
-	m_initSuccessful = true;
+	m_openSuccessful = true;
 	return 0;
 }
 
 void FramePusher::closeCodec()
 {
-	if (m_codec_ctx)
-		m_codec_ctx.reset();
-
-	if(m_fmt_ctx)
+	if (m_fmt_ctx)
+	{
 		m_fmt_ctx.reset();
+	}
+
+	if (m_codec_ctx)
+	{
+		m_codec_ctx.reset();
+	}
 }	
 
 void FramePusher::resizeSws(cv::Mat& img)
@@ -248,7 +257,7 @@ void FramePusher::stopPush()
 	if (m_pullThread && m_pullThread->joinable())
 	{
 		m_pullThread->join();
-		m_initSuccessful = false;
+		m_openSuccessful = false;
 		closeCodec();
 		clearBuffer();
 	}
@@ -259,8 +268,8 @@ int FramePusher::bufferCount()
 	return m_pushVector.size();
 }
 
-bool FramePusher::isInitSuccessful()
+bool FramePusher::isOpenSuccessful()
 {
-	return m_initSuccessful;
+	return m_openSuccessful;
 }
 

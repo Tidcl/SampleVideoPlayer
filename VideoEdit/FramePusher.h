@@ -21,7 +21,7 @@ public:
 	int FPS();
 
 	void updateFrame(cv::Mat& mat);
-	void pushFrame(cv::Mat& mat);
+	void pushFrameToVec(cv::Mat& mat, int bufferCount = 10);
 	int bufferCount();
 	void clearBuffer();
 
@@ -31,7 +31,7 @@ public:
 	void startPush();
 	void stopPush();
 
-	bool isInitSuccessful();
+	bool isOpenSuccessful();
 private:
 	int pushing();
 
@@ -57,5 +57,5 @@ private:
 	AVStream* m_videoStream = nullptr;
 
 	std::mutex m_mutex;
-	bool m_initSuccessful = false;
+	bool m_openSuccessful = false;
 };
