@@ -1,4 +1,5 @@
 #include "FrameComposer.h"
+#include "EditPanel.h"
 
 FrameComposer::FrameComposer()
 {
@@ -19,12 +20,18 @@ void FrameComposer::setSize(int width, int height)
 void FrameComposer::setPusher(std::shared_ptr<FramePusher> pusher)
 {
 	m_framePusher = pusher;
+	m_composeFPS = pusher->FPS();
 }
 
 void FrameComposer::setShowCallback(void(func)(cv::Mat, void*), void* component)
 {
 	m_func = func;
 	m_funcVal = component;
+}
+
+void FrameComposer::setPanel(EditPanel* panel)
+{
+	m_panel = panel;
 }
 
 void FrameComposer::addImgSource(std::shared_ptr<ImgSource> imgSource)
@@ -53,7 +60,7 @@ std::shared_ptr<ImgSource> FrameComposer::imgSource(int index)
 
 void FrameComposer::startCompose()
 {
-	m_composeTimer.setInterval(1000.0 / m_composeFPS);
+	m_composeTimer.setInterval(10);
 	m_composeTimer.setCallbackFun([](void* val) {
 		FrameComposer* ep = (FrameComposer*)val;
 		ep->composeFrameFromSource();
@@ -72,44 +79,49 @@ void FrameComposer::composeFrameFromSource()
 	static double frameTime = 1000.0 / m_composeFPS;
 	static double decodeFrameMS = 0;
 	static double playFrameMS = 0;
+	static double bufFrameCount = 10;
 
 	double nowTime = m_composeTimer.timeMS();
+	cv::Mat bufferFrame(height, width, CV_8UC3);
 
-	if (m_framePusher == nullptr)
+	//遍历图源合成到合成帧中
+	for (auto imgSour : m_imgSourceVec)
 	{
-		return;
+		if (imgSour)
+		{
+			cv::Mat& mat = imgSour->getPointTimeMat(decodeFrameMS);
+			//将图源重新缩放
+			if (mat.rows == 0)
+				continue;
+			//如果焦点区域超出就需要裁剪原图
+			mat.copyTo(bufferFrame(cv::Rect(imgSour->m_x, imgSour->m_y, imgSour->m_width, imgSour->m_height)));
+		}
 	}
-
-	//if (m_framePusher->bufferCount() >= 20)
+	
+	//if (m_framePusher->bufferCount() >= bufFrameCount)
 	//{
 	//	return;
 	//}
 
-	cv::Mat bufferFrame(height, width, CV_8UC3);
-	//遍历图源合成到合成帧中
-	for (auto imgSour : m_imgSourceVec)
-	{
-		cv::Mat& mat = imgSour->getPointTimeMat(decodeFrameMS);
-
-		//将图源重新缩放
-		if (mat.rows == 0)
-			continue;
-		//如果焦点区域超出就需要裁剪原图
-		mat.copyTo(bufferFrame(cv::Rect(imgSour->m_x, imgSour->m_y, imgSour->m_width, imgSour->m_height)));
-	}
-	if (nowTime > decodeFrameMS)
-	{
-		if (m_framePusher && m_framePusher->isInitSuccessful() && m_framePusher->bufferCount() < 20)
-		{	
-			//将帧发送给推流器
-			m_framePusher->pushFrame(bufferFrame);
-		}
-	}
-	decodeFrameMS += frameTime;
+	//if (m_framePusher && m_framePusher->bufferCount() <= bufFrameCount)
+	//{
+	////	//将帧发送给推流器
+	//	m_framePusher->pushFrameToVec(bufferFrame);
+	//}
 
 	if (nowTime > playFrameMS)
 	{
 		m_func(bufferFrame, m_funcVal);
-		playFrameMS += 100;	//10fps预览
+		playFrameMS += 200;	//5fps预览
 	}
+
+	if (nowTime > decodeFrameMS)
+	{
+		decodeFrameMS += frameTime;
+		if (m_framePusher && m_framePusher->bufferCount() <= bufFrameCount)
+		{
+			m_framePusher->pushFrameToVec(bufferFrame);
+		}
+	}
+		
 }

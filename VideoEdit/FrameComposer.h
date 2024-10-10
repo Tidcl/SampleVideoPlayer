@@ -5,6 +5,8 @@
 #include "FramePusher.h"
 #include "EditDecoder.h"
 
+class EditPanel;
+
 enum SourceType {
 	Picture = 0,
 	Gif,
@@ -48,6 +50,7 @@ public:
 	void setSize(int width, int height);
 	void setPusher(std::shared_ptr<FramePusher> pusher);
 	void setShowCallback(void(func)(cv::Mat, void*), void* component);
+	void setPanel(EditPanel* panel);
 
 	void addImgSource(std::shared_ptr<ImgSource> imgSource);
 	void removeImgSource(int index);
@@ -60,12 +63,13 @@ protected:
 private:
 	std::shared_ptr<FramePusher> m_framePusher = nullptr;
 	std::vector<std::shared_ptr<ImgSource>> m_imgSourceVec;
+	EditPanel* m_panel = nullptr;
 
 	void(*m_func)(cv::Mat, void*) = nullptr;
 	void* m_funcVal = nullptr;
 
 	VideoTimer m_composeTimer;
-	int m_composeFPS = 60;
+	int m_composeFPS = 30;
 	int width = 1280;
 	int height = 720;
 };
