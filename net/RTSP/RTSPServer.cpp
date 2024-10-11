@@ -11,9 +11,10 @@ void RTSPServer::acceptHandle()
 		std::shared_ptr<RTSPClientSession> clientHandle = std::make_shared<RTSPClientSession>(std::dynamic_pointer_cast<RTSPServer>(shared_from_this()));
 		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();	//channel负责读写，事件检测后，channel就将字符读到缓冲
 		clientHandle->setChannel(clientChannel);	//关联后续处理函数
+		clientChannel->setEventType(FDEventType::readEvent);
 		clientChannel->setFD(clientFd);	//管理fd
 		clientChannel->setHandle(clientHandle);	//管理后续处理函数
-		clientChannel->setPoller(m_poller);
+		clientChannel->addSelfToPoller(m_poller);
 	}
 }
 

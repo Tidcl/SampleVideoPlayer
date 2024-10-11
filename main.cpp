@@ -175,16 +175,20 @@ int main(int argc, char *argv[]) {
 
 		bool stopThread = false;
 		//创建协程
-		go[&stopThread, spoller]() {
-			printf("server starting...\n");
+		//go[&stopThread, spoller]() {
+		//	printf("server starting...\n");
+		//	while (!stopThread)
+		//	{
+		//		spoller->poll();
+		//	}
+		//};
+		//启动一个线程进行协程循环
+		std::thread t([&]() {
+			//co_sched.Start();
 			while (!stopThread)
 			{
 				spoller->poll();
 			}
-		};
-		//启动一个线程进行协程循环
-		std::thread t([]() {
-			co_sched.Start();
 		});
 
 

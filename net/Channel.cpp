@@ -18,7 +18,6 @@ void Channel::updateEventType()
 	}
 }
 
-
 void Channel::setEventType(FDEventType et)
 {
 	m_focusEventType = et;
@@ -45,7 +44,7 @@ void Channel::setFD(SOCKET fd)
 	m_fd = fd;
 }
 
-void Channel::setPoller(std::shared_ptr<Poller> poller)
+void Channel::addSelfToPoller(std::shared_ptr<Poller> poller)
 {
 	m_poller = poller;
 	m_poller->addFD(m_fd, shared_from_this());
@@ -58,11 +57,11 @@ SOCKET Channel::fd()
 
 void Channel::handle()
 {
-	if (eventType() == FDEventType::acceptEvent)
+	if (m_focusEventType == FDEventType::acceptEvent)
 	{
 		m_handle->acceptHandle();
 	}
-	else if (eventType() == FDEventType::readEvent)
+	else if (m_focusEventType == FDEventType::readEvent)
 	{
 		m_readByteBuffer.clear();
 		char* bufferAddr = const_cast<char*>(m_readByteBuffer.data());
@@ -71,23 +70,23 @@ void Channel::handle()
 		{
 			m_readByteBuffer.m_writePos = rtn;
 
-			m_handle->readHandle();
+			if(m_handle) m_handle->readHandle();
 		}
-		else
+		else if (rtn == 0 || rtn == -1)
 		{
 			closeHandle();
 		}
-
 	}
-	else if (eventType() == FDEventType::writeEvent)
+	else if (m_focusEventType == FDEventType::writeEvent)
 	{
 		int rtn = send(m_fd, m_writeByteBuffer.data(), m_writeByteBuffer.length(), 0);
 		if (rtn == m_writeByteBuffer.length())
 		{
 			m_writeByteBuffer.clear();
 			m_focusEventType = FDEventType::readEvent;
+			//closeHandle();
 		}
-		else if (rtn == -1)
+		else if (rtn == -1 || rtn == 0)
 		{
 			closeHandle();
 		}
@@ -103,6 +102,6 @@ void Channel::closeHandle()
 {
 	m_poller->rmFD(m_fd);
 	closesocket(m_fd);
-	m_handle->closeHandle();
+	if(m_handle) m_handle->closeHandle();
 	m_handle.reset();	//释放掉handler
 }

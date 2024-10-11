@@ -14,7 +14,7 @@ void SelectPoller::poll()
 
 	struct timeval timeout;
 	timeout.tv_sec = 0;
-	timeout.tv_usec = 10;
+	timeout.tv_usec = 100;
 	for (auto mapItem : fdMap)
 	{
 		fdCount++;
@@ -52,15 +52,14 @@ void SelectPoller::poll()
 			if (isFinish == false)
 			{
 				SOCKET fd = mapItem.first;
-				std::shared_ptr<Channel> channel = mapItem.second;
-
 				if (FD_ISSET(fd, &m_readSet) | FD_ISSET(fd, &m_writeSet) | FD_ISSET(fd, &m_errorSet))
 				{
 					isFinish = true;
 					isActive = true;
-					go co_scheduler(co_sched) [channel]() {
+					std::shared_ptr<Channel> channel = mapItem.second;
+					//go co_scheduler(co_sched) [channel]() {
 						channel->handle();
-					};
+					//};
 				}
 			}
 		}

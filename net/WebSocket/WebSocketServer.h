@@ -23,10 +23,10 @@ void WebSocketServer::acceptHandle()
 	{
 		std::shared_ptr<WebSocketClientSession> tcpClient = std::make_shared<WebSocketClientSession>();
 		std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
+		tcpClient->setChannel(clientChannel);
 		clientChannel->setFD(clientFd);
 		clientChannel->setHandle(tcpClient);
-
-		tcpClient->setChannel(clientChannel);
-		clientChannel->setPoller(m_poller);
+		clientChannel->setEventType(FDEventType::readEvent);
+		clientChannel->addSelfToPoller(m_poller);
 	}
 }

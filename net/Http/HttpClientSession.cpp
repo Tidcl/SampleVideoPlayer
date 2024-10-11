@@ -8,6 +8,8 @@ void HttpClientSession::readHandle()
 	size_t endIndex = readStr.find_first_of(" ", startIndex + 1);
 	m_reqUrlPath = readStr.substr(startIndex + 2, endIndex - startIndex - 2);
 
+	//printf("recv:\n%s\n", readStr.c_str());
+
 	//是否能在当前目录中找到html文件
 	int suffixIndex = (int)m_reqUrlPath.find(".");
 	if (suffixIndex == -1)
@@ -34,12 +36,12 @@ void HttpClientSession::dealRestfulReq()
 	std::vector<std::string> strVec;
 	strVec.emplace_back(std::move(std::string("HTTP/1.1 200 OK")));
 	strVec.emplace_back("Date: " + getCurrentTimeInGMT());
-	strVec.emplace_back(std::move(std::string("Content-Type: text/html; charset=UTF-8")));
-	std::string content;
+	strVec.emplace_back(std::move(std::string("Content-Type: text/txt; charset=UTF-8")));
+	std::string content = "";
 
 
 	memset(strbuf, 0, 1024);
-	sprintf(strbuf, "Content-Length: %d \r\n", (int)content.length());
+	sprintf(strbuf, "Content-Length: %d \r\n", (int)content.length()+strlen("\r\n"));
 	strVec.emplace_back(std::move(std::string(strbuf)));
 	strVec.emplace_back(std::move(content));
 	//组装成应答包
@@ -62,9 +64,7 @@ void HttpClientSession::dealFileQeq()
 	std::vector<std::string> strVec;
 	strVec.emplace_back(std::move(std::string("HTTP/1.1 200 OK")));
 	strVec.emplace_back("Date: " + getCurrentTimeInGMT());
-	memset(strbuf, 0, 1024);
-	sprintf(strbuf, "Content-Type: %s", getContentType(fileSuffix).c_str());
-	strVec.emplace_back(strbuf);
+
 
 	//std::string content;
 	//text image audio video application multipart
@@ -80,9 +80,15 @@ void HttpClientSession::dealFileQeq()
 			contentStr.replace(contentStr.find("%s"), 2, m_reqUrlPath);
 			errorContent.append(contentStr.c_str(), contentStr.length());
 			delete ifs;
+			memset(strbuf, 0, 1024);
+			sprintf(strbuf, "Content-Type: text/txt");
+			strVec.emplace_back(strbuf);
 		}
 		else
 		{
+			memset(strbuf, 0, 1024);
+			sprintf(strbuf, "Content-Type: %s", getContentType(fileSuffix).c_str());
+			strVec.emplace_back(strbuf);
 			ifs->seekg(0, std::ios::end);
 			fileLength = (long)ifs->tellg();
 			ifs->seekg(0, std::ios::beg);
@@ -96,7 +102,6 @@ void HttpClientSession::dealFileQeq()
 			//memset(buffer, 0, readCount);
 			//while (ifs.read(buffer, 4096) || ifs.gcount() > 0) {
 			//	readCount = ifs.gcount();
-
 			//	//content += buffer;
 			//	content.append(buffer, readCount);
 			//	memset(buffer, 0, readCount);
@@ -128,8 +133,8 @@ void HttpClientSession::dealFileQeq()
 	}
 
 	m_channel->writeByteBuffer() = response;
+	m_channel->writeByteBuffer().readFileContent();
 }
-
 
 
 //void HttpClientSession::testDealWebSocket()

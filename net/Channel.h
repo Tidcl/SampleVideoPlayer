@@ -21,7 +21,7 @@ public:
 	void setHandle(std::shared_ptr<Handle> handle);
 	SOCKET fd();
 	
-	void setPoller(std::shared_ptr<Poller> poller);
+	void addSelfToPoller(std::shared_ptr<Poller> poller);
 	void handle();
 
 	void closeHandle();

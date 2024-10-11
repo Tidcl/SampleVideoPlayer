@@ -11,6 +11,11 @@ void TcpServer::listen(int port /*= 8890*/)
 		perror("socket failed");
 		exit(EXIT_FAILURE);
 	}
+	u_long mode = 1;
+	if (ioctlsocket(listen_fd, FIONBIO, &mode) != 0) {
+		closesocket(listen_fd);
+		return;
+	}
 
 	// 2. 配置服务器地址结构体
 	addr.sin_family = AF_INET; // IPv4
@@ -31,6 +36,6 @@ void TcpServer::listen(int port /*= 8890*/)
 
 	m_acceptChannel->setFD(listen_fd);
 	m_acceptChannel->setHandle(this->shared_from_this());
-	m_acceptChannel->setPoller(m_poller);
+	m_acceptChannel->addSelfToPoller(m_poller);
 }
 

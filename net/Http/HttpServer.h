@@ -13,15 +13,18 @@ public:
 		SOCKET fd = m_acceptChannel->fd();
 		sockaddr addr;
 		int slen = sizeof(addr);
-		SOCKET clientFd = accept(fd, &addr, &slen);
+		INT64 clientFd = accept(fd, &addr, &slen);
 		if (clientFd > 0)
 		{
 			std::shared_ptr<HttpClientSession> tcpClient = std::make_shared<HttpClientSession>();
 			std::shared_ptr<Channel> clientChannel = std::make_shared<Channel>();
-			clientChannel->setFD(clientFd);
-			clientChannel->setHandle(tcpClient);
+
 			tcpClient->setChannel(clientChannel);
-			clientChannel->setPoller(m_poller);
+			clientChannel->setEventType(FDEventType::readEvent);
+			clientChannel->setFD(clientFd);
+
+			clientChannel->setHandle(tcpClient);
+			clientChannel->addSelfToPoller(m_poller);
 		}
 	}
 };

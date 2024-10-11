@@ -82,6 +82,7 @@ public:
 			double newOpacity_ = m_capacity * 1.5;
 			while (newOpacity_ < m_writePos + size)
 			{
+				if (newOpacity_ == 0) newOpacity_ = 1;
 				newOpacity_ = newOpacity_ * 1.5;
 			}
 
@@ -192,13 +193,18 @@ public:
 	void readFileContent() {
 		//memset(m_buffer, 0, m_capacity);
 		//m_readPos = 0;
-		if (m_readPos != m_writePos)
-		{
-			return;
-		}
+		
+		//if (m_readPos != m_writePos)
+		//{
+		//	return;
+		//}
+
+		if (m_ifs == nullptr) return;
+
 		m_readPos = 0;
-		m_ifs->read(m_buffer, m_capacity);
-		m_writePos = m_ifs->gcount();
+		m_ifs->read(m_buffer + m_writePos, m_capacity - m_writePos);
+		//m_writePos = m_ifs->gcount();
+		m_writePos += m_ifs->gcount();
 	};
 
 
